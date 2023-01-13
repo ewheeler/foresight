@@ -1,0 +1,25 @@
+# thx to https://stackoverflow.com/a/71110028
+name: foresight
+channels:
+  - pytorch
+  - conda-forge
+  # We want to have a reproducible setup, so we don't want default channels,
+  # which may be different for different users. All required channels should
+  # be listed explicitly here.
+  - nodefaults
+dependencies:
+  - python=3.10.*  # or don't specify the version and use the latest stable Python
+  - mamba
+  - pip  # pip must be mentioned explicitly, or conda-lock will fail
+  - poetry=1.*  # or 1.1.*, or no version at all -- as you want
+  - pytorch::pytorch=1.13.1
+  - pandas=1.5.2
+  - pyarrow=10.0.1
+
+# Non-standard section listing target platforms for conda-lock:
+platforms:
+  - osx-arm64  # For Apple Silicon, e.g. M1/M2
+  #- linux-aarch64  # aka arm64, use for Docker on Apple Silicon
+  - linux-64
+  - osx-64
+  - win-64
