@@ -1,0 +1,22 @@
+project:
+  title: "foresight-docs"
+  type: book
+  output-dir: _book
+
+format:
+  html:
+    embed-resources: true
+  pdf:
+    documentclass: scrbook
+    margin-left: 30mm
+    margin-right: 30mm
+
+book:
+  title: "foresight-docs"
+  author: "Chad Stoughton, Diana Kolusheva, Evan Wheeler"
+  date: "01/12/2023"
+  chapters:
+    - index.qmd
+    - chapter_01.qmd
+    - chapter_02.qmd
+    - chapter_03.qmd

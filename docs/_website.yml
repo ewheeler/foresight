@@ -1,0 +1,28 @@
+project:
+  title: "foresight-docs"
+  type: website
+  output-dir: _site
+
+theme:
+  light: flatly
+  dark: darkly
+
+website:
+  navbar:
+    background: primary
+    search: true
+    left:
+      - text: "Home"
+        file: index.qmd
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - section: "Proposal"
+        contents:
+          - text: "Chapter 1"
+            file: chapter_01.qmd
+          - text: "Chapter 2"
+            file: chapter_02.qmd
+          - text: "Chapter 3"
+            file: chapter_03.qmd

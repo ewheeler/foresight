@@ -1,0 +1,32 @@
+---
+title: "Chapter 3"
+format: html
+---
+
+```{mermaid}
+gantt
+    dateFormat  YYYY-MM-DD
+    title       Capstone implementation timeline
+
+    section Pre-capstone proposal
+    Chapter 01            :done,    pre1, 2023-01-10,2023-01-12
+    Chapter 02            :active,  pre2, 2023-01-17, 3d
+    Chapter 03            :         pre3, 2023-01-19, 2d
+
+    section Data
+    Data ingestion pipelines            :datapipe, after pre3, 2023-01-23
+
+    section Modelling
+    Establish set of models             :active, m1, after pre3, 1w
+    Establish model performance evaluation metrics :active, m2, after a1, 1w
+    Implement model training pipelines  :modpipe, after pre3  , 2w
+    Train model A                       :after modpipe, 1w
+    Train model B                       :after modpipe, 1w
+    Train model C                       :after modpipe, 1w
+    Evaluate models                     :eval, after modpipe, 4w
+
+    section Capstone paper
+    Draft findings                      :draft, after eval, 2w
+    Create figures                      :figs, after draft, 1w
+    Copyediting and revision            :final, after figs, 2w
+```
