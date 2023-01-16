@@ -72,3 +72,4 @@ tmp/*
 *_resources.yaml
 *.ipynb
 docs/_book/*
+docs/.quarto/
