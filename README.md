@@ -23,7 +23,7 @@ do that explicitly):
 conda activate my_project_env
 ```
 
-Updating environment:
+Updating environment (after running `poetry add new_dependency`):
 ```
 # Re-generate Conda lock file(s) based on environment.yml
 conda-lock -k explicit --conda mamba
