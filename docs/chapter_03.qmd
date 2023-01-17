@@ -2,6 +2,56 @@
 title: "Chapter 3"
 format: html
 ---
+## Trustworthiness of data
+
+```{mermaid}
+graph TD
+    A[Conflict event] -->|reporter| B(Online news article)
+    B --> C
+
+    subgraph GDELT
+        C --> |Google Chrome Compact Language Detector - CLD2|D(Language detection)
+        D --> |Conditional random field and various lang-specific|E(Word segmentation)
+        E --> F(Morphological analysis)
+        F --> G(Sentiment and emotional assessment)
+        G --> H(Sentence and clause segmentation)
+        H --> I(Low pass translation)
+        H --> J(Mid pass translation)
+        H --> K(Toponymic translation)
+        H --> L(Well known entity translation)
+        I --> M(Candidate translation ranking)
+        M --> O(Chosen translation)
+        J --> M
+        M --> |some langs|N(High pass translation)
+        N --> O
+        O --> |Moses and other grammer models|Q(User adaptation - dynamic language models)
+        Q --> R(High pass UNK substitution)
+        R --> S(Recapitalization models)
+        S --> T(English translation, events, entities, geocoding, and scores)
+
+        T --> |Universal Sentence Encoder| U(English article embeddings)
+
+        K --> T
+        L --> T
+
+    end
+
+    B --> |human and machine processes|CC(Judgement against ACLED event inclusion criteria)
+    subgraph ACLED
+        CC --> |human and machine processes|DD[Coded events, categories, event actors, geolocations, reported fatalities]
+
+        DD --> |three rounds of human review|DD
+        DD --> EE(Weekly aggregations of events and fatalities)
+    end
+
+    EE --> V(Timeseries dataset)
+    U --> V
+
+    V --> |Our model| W(Our conflict predictions)
+
+```
+
+## Capstone project timeline
 
 ```{mermaid}
 gantt
