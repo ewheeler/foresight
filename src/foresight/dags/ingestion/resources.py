@@ -2,6 +2,8 @@
 from dagster import resource
 import fsspec
 
+# TODO implement as IO manager
+# https://docs.dagster.io/concepts/io-management/io-managers#defining-an-io-manager
 @resource
 def gcp_container(init_context):
     class GCPContainer:
@@ -17,6 +19,8 @@ def gcp_container(init_context):
             self.prefix = "gs://"
     return GCPContainer(init_context.resource_config)
 
+# TODO implement as IO manager
+# https://docs.dagster.io/concepts/io-management/io-managers#defining-an-io-manager
 @resource
 def local_storage(init_context):
     class LocalStorage:
