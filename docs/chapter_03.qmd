@@ -7,7 +7,7 @@ format: html
 ```{mermaid}
 graph TD
     A[Conflict event] -->|reporter| B(Online news article)
-    B --> C
+    B --> C(Scraped webpage)
 
     subgraph GDELT
         C --> |Google Chrome Compact Language Detector - CLD2|D(Language detection)
@@ -48,7 +48,6 @@ graph TD
     U --> V
 
     V --> |Our model| W(Our conflict predictions)
-
 ```
 
 ## Capstone project timeline
