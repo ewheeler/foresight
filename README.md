@@ -52,3 +52,8 @@ Navigate to foresight python package and launch Dagster's `dagit` UI
 $ cd src/foresight
 $ dagit
 ```
+
+To persist dagit state after the process exits, set a `DAGSTER_HOME` env var:
+```
+$ export DAGSTER_HOME='/path/to/src/foresight'
+```

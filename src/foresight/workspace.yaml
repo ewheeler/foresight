@@ -1,4 +1,4 @@
 load_from:
   - python_file:
-      relative_path: ./dags/repositories.py
+      relative_path: ./dags/ingestion.py
       working_directory: .
