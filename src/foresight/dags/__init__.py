@@ -9,6 +9,7 @@ from .io_pandas import gcp_parquet_io_manager
 resources = {
     "local": {
         "parquet_io_manager": local_parquet_io_manager.configured(
+            # TODO better to load base_path from env
             {
                 "base_path": "datasets",
             }
@@ -22,6 +23,7 @@ resources = {
             # if the GOOGLE_APPLICATION_CREDENTIALS env var is set:
             # gcloud auth application-default login
             # export GOOGLE_APPLICATION_CREDENTIALS="/Users/ewheeler/.config/gcloud/application_default_credentials.json"
+            # TODO better to load base_path and project from env
             {
                 "base_path": "gs://frsght/datasets",
                 "project": "foresight-375620",
