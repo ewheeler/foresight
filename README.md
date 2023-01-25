@@ -35,6 +35,10 @@ mamba update --file conda_platform_locks/conda-linux-64.lock
 poetry update
 ```
 
+On an M1 mac, installing the `darts` package via conda and poetry failed,
+so it is included in `pyproject.toml` with an environment marker for `x86_64`
+systems. M1 mac users will need to `pip install darts` :(
+
 
 ### Documents
 
