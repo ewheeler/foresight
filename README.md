@@ -27,8 +27,10 @@ Updating environment (after running `poetry add new_dependency`):
 ```
 # Re-generate Conda lock file(s) based on environment.yml
 conda-lock -k explicit --conda mamba
+
 # Update Conda packages based on re-generated lock file
 mamba update --file conda_platform_locks/conda-linux-64.lock
+
 # Update Poetry packages and re-generate poetry.lock
 poetry update
 ```
@@ -57,3 +59,33 @@ To persist dagit state after the process exits, set a `DAGSTER_HOME` env var:
 ```
 $ export DAGSTER_HOME='/path/to/src/foresight'
 ```
+
+To enable backfill and scheduling functionality, set `DAGSTER_HOME`
+in another shell and run:
+```
+$ dagster-daemon run
+```
+
+Dagster includes support for using `.env` files
+https://docs.dagster.io/guides/dagster/using-environment-variables-and-secrets#declaring-environment-variables
+So an `example.env` is included in the repo.
+Make a copy and then customize:
+```
+$ cd src/foresight
+$ cp example.env .env
+```
+
+
+
+### Notebooks
+
+Notebooks are stored as Jupytext Paired notebooks ('light' .py files):
+https://jupytext.readthedocs.io/en/latest/paired-notebooks.html
+
+The jupyter extension should be installed by Poetry, but you may
+need to enable it: https://jupytext.readthedocs.io/en/latest/install.html#jupytext-menu-in-jupyter-notebook
+
+Also, the Jupytext menu described in the link above doesn't show for me,
+but going to `View > Activate Command Palette` menu in Jupyterlab 
+and selecting 'Pair Notebook with light Script' works for pairing a new '.ipynb'
+

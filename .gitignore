@@ -74,3 +74,9 @@ tmp/*
 docs/_book/*
 docs/.quarto/
 docs/.gitignore
+src/foresight/notebooks/.ipynb_checkpoints
+src/foresight/history
+src/foresight/logs
+src/foresight/storage
+src/foresight/schedules
+srv/foresight/.env
