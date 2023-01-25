@@ -74,3 +74,6 @@ tmp/*
 docs/_book/*
 docs/.quarto/
 docs/.gitignore
+
+#Secrets
+ACLED_Key.txt
