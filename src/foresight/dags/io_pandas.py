@@ -19,25 +19,6 @@ from dagster import (
     io_manager,
 )
 
-"""
-# didn't end up needing to use this,
-# but i'd hate to write this again...
-# so leaving long enough to be in git history
-GDELT_KEEP_STRING = ['GKGRECORDID', 'DocumentIdentifier', 'V2Locations', 'lang', 'yearmonth']
-GDELT_KEEP_INT64 = ['DATE', 'year', 'month']
-GDELT_KEEP_TIMESTAMP = ['date']
-GDELT_KEEP_LIST = ['countries', 'docembed']
-
-def get_gdelt_schema():
-    schema = list()
-    for columns, patype in zip([GDELT_KEEP_STRING, GDELT_KEEP_TIMESTAMP,  GDELT_KEEP_INT64],
-                               [pa.string(), pa.timestamp('ns'), pa.int64()]):
-        schema = schema + list(zip(columns, itertools.repeat(patype)))
-
-    schema = schema + [("docembed", pa.list_(pa.int32())),
-                       ("countries", pa.list_(pa.string()))]
-    return pa.schema(schema)
-"""
 
 class PyArrowParquetIOManager(UPathIOManager):
     extension: str = ".parquet"
