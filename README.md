@@ -60,6 +60,12 @@ To persist dagit state after the process exits, set a `DAGSTER_HOME` env var:
 $ export DAGSTER_HOME='/path/to/src/foresight'
 ```
 
+By default, pipelines will write datasets to the local filesystem.
+To write datasets to a GCP bucket instead, change the 'mode' with an env var:
+```
+$ export DAGSTER_DEPLOYMENT='production'
+```
+
 To enable backfill and scheduling functionality, set `DAGSTER_HOME`
 in another shell and run:
 ```
@@ -74,7 +80,6 @@ Make a copy and then customize:
 $ cd src/foresight
 $ cp example.env .env
 ```
-
 
 
 ### Notebooks
