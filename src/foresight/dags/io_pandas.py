@@ -64,19 +64,12 @@ class PyArrowParquetIOManager(UPathIOManager):
             written_metadata.append(written_file.metadata)
             written_sizes.append(written_file.size)
 
-        context.log.debug(table.schema)
-        #table = table.unify_dictionaries()
-        # use scanner to write in chunks
-        #scanner = ds.dataset(table, schema=schema).scanner()
         ds.write_dataset(table, dataset_path,
                          basename_template=basename_template,
                          existing_data_behavior="overwrite_or_ignore",
                          format="parquet", file_options=write_options,
                          partitioning=partitions,
                          file_visitor=file_visitor)
-        for meta in written_metadata:
-            context.log.debug(meta)
-        context.log.debug(table.schema)
 
         # Write the ``_common_metadata`` parquet file without row groups statistics
         #pq.write_metadata(table.schema, dataset_path / '_common_metadata')
