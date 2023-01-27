@@ -136,7 +136,9 @@ def fetch_gkg(timestamp):
     _df = _df.rename(columns={1: 'countries'})
     # remove nans introduced by droplevel
     _df['countries'] = _df['countries'].map(lambda x: list(filter(lambda y: not pd.isna(y), x)))
-    df = df.join(_df['countries'])
+    _df['num_countries'] = _df['countries'].map(len)
+    df = df.join(_df[['countries', 'num_countries']])
+    df['num_countries'] = df['num_countries'].fillna(0).astype('int')
     return df
 
 @asset(
@@ -174,9 +176,9 @@ def fetch_gsg(timestamp, tmp_dir='/tmp'):
     gsg_url = f"http://data.gdeltproject.org/gdeltv3/gsg_docembed/{gsg_filename}"
 
     gz_tmp = f"{tmp_dir}/{gsg_filename}"
-    json_tmp = f"{tmp_dir}/{timestamp}.gsg.docembed.json"
+    json_tmp = f"{tmp_dir}/{timestamp}.gsg.docembed.ndjson"
 
-    # get gdelt file
+    # get gdelt file if its not present in tmp_dir
     if not pathlib.Path(gz_tmp).is_file():
         urllib.request.urlretrieve(gsg_url, gz_tmp)
 
@@ -184,18 +186,22 @@ def fetch_gsg(timestamp, tmp_dir='/tmp'):
         # make json generator
         with gzip.GzipFile(fileobj=open(gz_tmp, 'rb')) as gzipfile:
             content_str = gzipfile.read().decode('utf-8')
-            json_extract = json_decode_many(content_str)
+            records = json_decode_many(content_str)
     except EOFError:
-        json_extract = dict()
+        records = dict()
 
-    # write decoded json
+    # write decoded ndjson
     with open(json_tmp, 'w') as f:
-        for chunk in json.JSONEncoder().iterencode(SerializableGenerator(json_extract)):
-            f.write(chunk)
+        encoder = json.JSONEncoder()
+        for record in iter(SerializableGenerator(records)):
+            # explode column 'docembed' (list of floats) into 512 columns
+            embeds = dict([(f'docembed-{n}', i) for n, i in enumerate(record['docembed'])])
+            _ = record.pop('docembed')
+            record.update(embeds)
+            f.write(encoder.encode(record) + '\n')
 
-    # TODO write ndjson above instead of json?
-    # then dask can read in chunks of blocksize
-    df = pd.read_json(json_tmp, lines=False)
+    # we wrote ndjson, so need the lines param
+    df = pd.read_json(json_tmp, lines=True)
     df['gsg_file'] = timestamp
     return df
 
@@ -226,11 +232,6 @@ def gsg(context) -> pd.DataFrame:
     )
     yield Output(df, metadata={"num_rows": len(df)})
 
-GDELT_KEEP_STRING = ['GKGRECORDID', 'DocumentIdentifier', 'V2Locations', 'lang', 'yearmonth']
-GDELT_KEEP_INT64 = ['DATE', 'year', 'month']
-GDELT_KEEP_TIMESTAMP = ['date']
-GDELT_KEEP_LIST = ['countries', 'docembed']
-
 @asset(
     partitions_def=daily_partitions_def,
     code_version="1",
@@ -257,17 +258,16 @@ def gdelt(context, gkg, gsg) -> pd.DataFrame:
     df_all['month'] = df_all['date'].dt.month
     df_all['yearmonth'] = df_all['date'].dt.strftime('%Y%d')
 
-    df = df_all[GDELT_KEEP_INT64 + GDELT_KEEP_LIST + GDELT_KEEP_STRING + GDELT_KEEP_TIMESTAMP]
     context.log_event(
         ExpectationResult(
-            success=len(df) > 0,
+            success=len(df_all) > 0,
             description="ensure dataframe has rows",
             metadata={
-                "raw_count": len(df),
+                "raw_count": len(df_all),
             },
         )
     )
-    yield Output(df, metadata={"num_rows": len(df)})
+    yield Output(df_all, metadata={"num_rows": len(df_all)})
 
 gdelt_job = define_asset_job(
     name="gdelt_job",

@@ -13,41 +13,213 @@
 #     name: python3
 # ---
 
+# Using GCP storage from Colab
+
+# +
+GCP_PROJECT_ID = 'foresight-375620'
+PROJECT_NUMBER = '4591936303'
+
+import os
+import sys
+import json
+
+# check for colab
+IN_COLAB = 'google.colab' in sys.modules
+
+if IN_COLAB:
+    import google.auth
+    from google.colab import auth
+
+    # authenticate with gcp
+    auth.authenticate_user()
+    credentials, project_id = google.auth.default()
+
+# +
+# #!pip install universal_pathlib gcsfs
+# -
+
 # ## Reading Parquet datasets with PyArrow and Pandas
 
+# In most cases, datasets will be read from cloud storage. To authenticate to GCP from your local machine:
+#  - install gcloud cli (https://cloud.google.com/sdk/docs/install or https://formulae.brew.sh/cask/google-cloud-sdk)
+#  - follow instructions to initialize/configure and when prompted, select project 'foresight-375620' as your default
+#  - set up [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc) by running `gcloud auth application-default login`
+#  
+# Now, tools that support [fsspec](https://filesystem-spec.readthedocs.io/en/latest) (like Dask, pandas, xarray, etc) will automagically use your ADC to authenticate with GCP when supplied with a file path starting with `gcs://` (and/or `gs://`).
+#
+# [universal_pathlib](https://github.com/fsspec/universal_pathlib) is an implementation of Python stdlib's `pathlib.Path` with fsspec support.
+#
+# Foresight datasets are stored in a bucket called `frsght` in a 'directory' called `datasets`:
+#  - `gkg` are data from GDELT's Global Knowledge Graph, with a couple additions
+#      - `gkg_file` is the name of the '\*csv.zip' file retrieved from GDELT
+#      - `countries` is a set of ISO2 (presumably) country codes extracted from `V2Locations` (this process is shown below)
+#  - `gsg` are data from GDELT's Global Similarity Graph with a `gsg_file` column added
+#  - `gdelt` are a subset of the resulting columns after joining the `gkg` and `gsg` data on article url with a couple convenience columns derived from `date` for partitioning and grouping (`year`, `month`, `yearmonth`)
+#       - `gdelt` is partitioned by `year` and then by `month`, so the parquet's individual part files for a given month would be on disk at `gcs://frsght/datasets/gdelt/2020/1/part-20200102-0.parquet`. Note that `year` and `month` may not appear as 'columns' when reading the parquet
+#       - as the Dagster pipeline is partitioned by day, each part corresponds to a specific day which is included in the part's filename. Note there could be multiple parts for a single day (e.g., `part-20200102-0.parquet` and `part-20200102-1.parquet`)
+#       - partitioning is for performance purposes as partitioned predicates can be 'pushed down' and handled by the storage layer during reads. tools for reading parquet files will handle this transparently
+
+# +
+import logging
+import warnings
+import operator
+
+import numpy as np
 import pandas as pd
+import pyarrow as pa
 import pyarrow.parquet as pq
+import pyarrow.dataset as ds
+from upath import UPath
+# -
 
 # pandas can read parquet files directly (and can get a subset of columns)
-# and by default uses pyarrow under the hood
-df = pd.read_parquet('../pd_datasets/gkg', columns=['V2Locations', 'docembed'])
+# and although by default pandas uses pyarrow under the hood to read/write
+# parquet files, it has the extra step of converting columns to numpy arrays
+try:
+    df = pd.read_parquet('../datasets/gkg', columns=['V2Locations'])
+except FileNotFoundError:
+    pass
 
-# pyarrow has some additional, useful functionality
+# pyarrow has some additional, useful functionality compared to pandas.
 # pyarrow.parquet.ParquetDataset can read metadata without loading data into RAM
 # https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetDataset.html#pyarrow.parquet.ParquetDataset
-ds = pq.ParquetDataset('../pd_datasets/gkg', use_legacy_dataset=False)
+gkg_ds = pq.ParquetDataset('gcs://frsght/datasets/gkg', use_legacy_dataset=False)
 
-ds.files
+# we can inspect the files that consitute the `gkg` parquet
+# note that these are not partitioned, although each part's name includes it's day
+gkg_ds.files
 
-ds.schema
+# we can inspect the schema
+gkg_ds.schema
 
-# can use filters to load only certain rows conditionally
-ds = pq.ParquetDataset('../pd_datasets/gdelt', use_legacy_dataset=False, filters=[('lang', '=', 'ENGLISH')])
+# Each day's `gdelt` dataset's compressed partition is around 500MB to 2.5GB in size and contains ~120k to ~700k rows.
+# But! Not all records have anything in `countries` (there was nothing to extract from `V2Locations`), so we can use pyarrow to filter out records lacking values for `countries` without reading them into memory first.
 
+# +
+# %%time
+# this is fast because we're just reading parquet metadata.
+# we can use filters to load only certain rows conditionally
+# and could also apply expressions as 'projections' that will
+# transform data as it is read from disk
+# https://arrow.apache.org/docs/python/dataset.html#projecting-columns
+# https://arrow.apache.org/docs/python/compute.html
+
+#pqds = pq.ParquetDataset('gcs://frsght/datasets/gdelt',
+pqds = pq.ParquetDataset('../datasets/gdelt',
+                         use_legacy_dataset=False,
+                         filters=[('num_countries', '>', 0),
+                                  ('lang', '=', 'ENGLISH')])
+# -
+
+pqds.files
+
+pqds.schema
+
+# +
+# lets see how big the compressed parquet is on disk
+
+pqds_size = sum((UPath(f"gcs://{f}").stat()['size'] for f in pqds.files))
+# -
+
+print("file size: {} MB".format(pqds_size >> 20))
+
+emb_cols = [f"docembed-{n}" for n in range(512)]
+
+# %%time
 # read specific subset of columns from the dataset into memory as a pyarrow.Table
-# (read_pandas means it will read any pandas-specific metatdata that
-#  was included when writing the parquet file)
-# NOTE that the Table API has some useful stuff that will be
-# more memory efficient than pandas
+# (`read_pandas` param means it will read any pandas-specific metatdata that
+#  was included when writing the parquet file, like the schema metadata
+#  seen in the schema output above)
+# NOTE that the pyarrow.Table API has some useful operations that
+# may be more computationally efficient than pandas
 # https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table
-table = ds.read_pandas(columns=['V2Locations', 'docembed'])
+table = pqds.read_pandas(columns=['countries', 'date'] + emb_cols)
+
+# lets see how big our filtered subset is in memory
+print("RSS (RAM): {} MB".format(pa.total_allocated_bytes() >> 20))
 
 table.shape
 
-table.schema
+# +
+# %%time
+# we could convert to pandas DataFrame
+# (though this may not be feasible- in the
+#  worst case, 2x memory will be needed)
 
-# convert to pandas DataFrame
-df = table.to_pandas()
+#df = table.to_pandas()
+
+# pyarrow can convert in blocks and delete each column's
+# arrow memory buffer along the way
+df = table.to_pandas(split_blocks=True, self_destruct=True)
+del table  # not necessary, but a good practice
+# -
+
+# add a time period to use as a window
+df['window'] = df['date'].dt.to_period('D')
+df
+
+# calculate mean of embedddings for the window
+# and collapse embedding columns back into lists
+df_means = df.groupby('window').mean()[emb_cols].apply(np.array, axis=1)
+df_means
+
+# ## Reading Parquet datasets with Dask
+
+# Dask lazily constructs a graph of operations that it can execute over a big dataset in chunks (and can distribute the computation over many processes or machines)
+
+from dask.distributed import Client
+client = Client(n_workers=4, threads_per_worker=2, processes=True,
+                memory_limit='12GB', silence_logs=logging.ERROR)
+
+client
+
+from dask.diagnostics import ProgressBar
+pbar = ProgressBar()
+pbar.register()
+
+import dask.dataframe as dd
+
+filters=[('num_countries', '>', 0)]
+ddf = dd.read_parquet('gcs://frsght/datasets/gdelt', columns=['countries', 'date'] + emb_cols,
+                      split_row_groups=True, infer_divisions=True, filters=filters, engine='pyarrow')
+#ddf = dd.read_parquet('../datasets/gdelt', columns=['countries', 'date'] + emb_cols)
+
+ddf.npartitions
+
+# %%time
+ddf['date'] = ddf['date'].dt.tz_localize(None)
+
+# %%time
+ddf['window'] = ddf['date'].dt.to_period('D')
+
+# %%time
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    # emits _lots_ of warnings about dropping timezone info
+    window_record_counts = ddf['window'].value_counts().compute()
+
+window_record_counts
+
+# %%time
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    # emits _lots_ of warnings about dropping timezone info
+    countries_record_counts = ddf['countries'].value_counts().compute()
+
+countries_record_counts
+
+countries_rows = ddf.explode('countries')
+
+# %%time
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    # emits _lots_ of warnings about dropping timezone info
+    ddf_means = ddf.groupby('window').mean()[emb_cols].apply(np.array, axis=1).compute()
+
+ddf_means
+
+# TODO why do the pd and dask means differ?!
+df_means - ddf_means
 
 # ## Extracting country codes from V2Locations
 
@@ -65,6 +237,11 @@ txt = """
 # of each location description
 # use same regex to find all of them for a given record's V2Locations
 re.findall(r'1#\w+#(?P<country>\w{2})#', txt)
+
+try:
+    df = pd.read_parquet('../datasets/gkg', columns=['V2Locations'])
+except FileNotFoundError:
+    pass
 
 # + tags=[]
 df.fillna("", inplace=True)
@@ -102,10 +279,16 @@ _df = _df.rename(columns={1: 'countries'})
 # lists contain NaNs since the number of extracted countries varies per record,
 # so map a crazy double lambda expression to remove them
 _df['countries'] = _df['countries'].map(lambda x: list(filter(lambda y: not pd.isna(y), x)))
+# pyarrow filters don't support list columns, so
+# add a column we can use to filter out records
+# that don't have any countries
+_df['num_countries'] = _df['countries'].map(len)
 _df
 
-# finally, join the new 'countries' column of lists
-# to the original dataframe
-df = df.head().join(_df['countries'])
+# finally, join the new columns to the original dataframe
+new_df = df.head().join(_df[['countries', 'num_countries']])
+new_df['num_countries'] = new_df['num_countries'].fillna(0).astype('int')
 
-df
+new_df
+
+
