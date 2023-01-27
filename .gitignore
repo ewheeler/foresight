@@ -80,3 +80,6 @@ src/foresight/logs
 src/foresight/storage
 src/foresight/schedules
 srv/foresight/.env
+
+#Secrets
+ACLED_Key.txt
