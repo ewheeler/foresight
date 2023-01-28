@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from sklearn.linear_model import LinearRegression
 import numpy as np
 
 pd.options.display.expand_frame_repr = False
@@ -47,6 +48,8 @@ month_num = { 'January'  :   1
 
 ACLED['Month_Num'] = ACLED['Month'].map(month_num)
 
+ACLED['Date'] = pd.to_datetime(ACLED['Month'] + ' ' + ACLED['Year'].astype(str))
+
 #simple boolean: Did people die or not?
 ACLED['Fatalities_Bool'] = ACLED['Fatalities']>1
 
@@ -54,12 +57,18 @@ ACLED['Fatalities_Bool'] = ACLED['Fatalities']>1
 #ACLED['More_Than_Average_Since_2021'] = ACLED['Fatalities']>
 
 def month_template (start_month, year, n_months):
+    """
+    Returns a DF with years/months for the time period begining
+    1 month before start_month and ending n months before start_month
+    """
 
     if type(start_month) == str:
         start_month = month_num[start_month]
-    month_years = [(start_month, year)]
+
+    month_years = []
     month = start_month
-    for i in range(n_months-1):
+
+    for i in range(n_months):
         if month <=1:
             month = 12
             year = year-1
@@ -69,6 +78,37 @@ def month_template (start_month, year, n_months):
         month_years.append((month, year))
 
     df = pd.DataFrame(month_years)
-    df.rename({0:'Month', 1:'Year'}, axis = 1, inplace=True)
+    df.rename({0:'Month_Num', 1:'Year'}, axis = 1, inplace=True)
 
     return df
+
+def create_base_df(start_month, start_year, country, n_months):
+    """
+    Creates a base df of n months from the start date for a given country
+    This can be used for further trend analysis
+    """
+    country_df = ACLED[ACLED['Country'] == country]
+    month_df = month_template(start_month, start_year,n_months)
+    base_df = month_df.merge(country_df, how = 'left', on = ['Month_Num', 'Year'])
+    base_df['Fatalities'] = base_df['Fatalities'].fillna(0)
+    return base_df
+
+
+def fatalities_previous_month(start_month, start_year, country):
+    base_df = create_base_df(start_month, start_year, country, 1)
+    return base_df['Fatalities'].iloc[0]
+
+
+def n_month_mean(start_month, start_year, country, n_months):
+    base_df = create_base_df(start_month, start_year, country, n_months)
+    return base_df['Fatalities'].mean()
+
+
+def n_month_trend(start_month, start_year, country, n_months):
+    base_df = create_base_df(start_month, start_year, country, n_months)
+    x = base_df.index.values.reshape(-1,1)
+    y = base_df['Fatalities']
+    model = LinearRegression()
+    model.fit(x,y)
+    slope = model.coef_
+    return slope
