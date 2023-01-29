@@ -31,11 +31,6 @@ ACLED['Month_Num'] = ACLED['Month'].map(month_num)
 
 ACLED['Date'] = pd.to_datetime(ACLED['Month'] + ' ' + ACLED['Year'].astype(str))
 
-#simple boolean: Did people die or not?
-ACLED['Fatalities_Bool'] = ACLED['Fatalities']>1
-
-#ACLED['More_Than_Average'] = ACLED['Fatalities']>
-#ACLED['More_Than_Average_Since_2021'] = ACLED['Fatalities']>
 
 
 def get_months (start_month, year, n_months, include_start_month = False):
@@ -73,12 +68,12 @@ def get_months (start_month, year, n_months, include_start_month = False):
 
     return date_range
 
-def create_base_df(start_month, start_year, country, n_months):
+def create_base_df(country, *args, **kwargs):
     """
     Creates a base df of n months from the start date for a given country
     This can be used for further trend analysis
     """
-    daterange = get_months(start_month,start_year, n_months)
+    daterange = get_months(*args, **kwargs)
 
     df = ACLED[
              (ACLED['Country'].values == country)
@@ -88,21 +83,49 @@ def create_base_df(start_month, start_year, country, n_months):
     return df
 
 
-def fatalities_previous_month(start_month, start_year, country):
-    base_df = create_base_df(start_month, start_year, country, 1)
+def fatalities_previous_month(country, start_month, start_year):
+    base_df = create_base_df(country, start_month, start_year, 1)
+    if len(base_df) == 0:
+        return None
     return base_df['Fatalities'].iloc[0]
 
 
-def n_month_mean(start_month, start_year, country, n_months):
-    base_df = create_base_df(start_month, start_year, country, n_months)
+def n_month_mean(country, *args, **kwargs):
+    base_df = create_base_df(country, *args, **kwargs)
     return base_df['Fatalities'].mean()
 
 
-def n_month_trend(start_month, start_year, country, n_months):
-    base_df = create_base_df(start_month, start_year, country, n_months, include_start_month = True)
+def n_month_trend(country, *args, **kwargs):
+    kwargs.update({'include_start_month':True})
+    base_df = create_base_df(country, *args, **kwargs)
     x = base_df.index.values.reshape(-1,1)
     y = base_df['Fatalities']
     model = LinearRegression()
     model.fit(x,y)
     slope = model.coef_
-    return slope
+    return slope[0]
+
+
+
+def apply_by_row(row, func, **kwargs):
+    return func(row['Country'], row['Month'], row['Year'], **kwargs)
+
+"""
+START ADDING STUFF
+"""
+
+n_months
+
+#Scalers
+ACLED['Fatalities_Last_Month'] = ACLED.apply(apply_by_row, args = [fatalities_previous_month], axis = 1)
+ACLED['Mean_Last_3_Months'] = ACLED.apply(apply_by_row, args = [n_month_mean], n_months=n_months, axis = 1)
+ACLED['Trend'] = ACLED.apply(apply_by_row, args = [n_month_trend], n_months=n_months, axis = 1)
+ACLED['Theta'] = np.arctan(ACLED['Trend'])
+
+#Bools
+ACLED['Fatalities_Bool'] = ACLED['Fatalities']>0
+ACLED['More_Than_Last_month'] = ACLED['Fatalities']>ACLED['Fatalities_Last_Month']
+ACLED['More_Than_Average'] = ACLED['Fatalities']>ACLED['Mean_Last_3_Months']
+ACLED['Trend_Increasing'] = ACLED['Trend']>0
+
+
