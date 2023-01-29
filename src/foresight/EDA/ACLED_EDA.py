@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import os
 from sklearn.linear_model import LinearRegression
@@ -82,16 +84,51 @@ def month_template (start_month, year, n_months):
 
     return df
 
-def create_base_df(start_month, start_year, country, n_months):
+
+def get_months (start_month, year, n_months):
+    """
+    Returns a DF with years/months for the time period begining
+    1 month before start_month and ending n months before start_month
+    """
+
+    if type(start_month) == str:
+        start_month = month_num[start_month]
+
+    month_years = []
+    month = start_month
+
+    for i in range(n_months):
+        if month <= 1:
+            month = 12
+            year = year - 1
+        else:
+            month = month - 1
+
+        month_years.append((year, month))
+
+    start_date = month_years[0]
+    end_date = month_years[-1]
+
+    date_range = (
+         datetime.datetime(start_date[0], start_date[1], 1)
+        ,datetime.datetime(end_date[0], end_date[1], 1)
+    )
+
+    return date_range
+
+def create_base_df2(start_month, start_year, country, n_months):
     """
     Creates a base df of n months from the start date for a given country
     This can be used for further trend analysis
     """
-    country_df = ACLED[ACLED['Country'] == country]
-    month_df = month_template(start_month, start_year,n_months)
-    base_df = month_df.merge(country_df, how = 'left', on = ['Month_Num', 'Year'])
-    base_df['Fatalities'] = base_df['Fatalities'].fillna(0)
-    return base_df
+    daterange = get_months(start_month,start_year, n_months)
+
+    df = ACLED[
+              (ACLED['Country'] == country)
+            & (ACLED['Date'] >= daterange[1])
+            & (ACLED['Date'] <= daterange[0])
+    ]
+    return df
 
 
 def fatalities_previous_month(start_month, start_year, country):
