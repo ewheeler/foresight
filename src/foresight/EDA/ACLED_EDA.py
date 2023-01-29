@@ -38,7 +38,7 @@ ACLED['Fatalities_Bool'] = ACLED['Fatalities']>1
 #ACLED['More_Than_Average_Since_2021'] = ACLED['Fatalities']>
 
 
-def get_months (start_month, year, n_months):
+def get_months (start_month, year, n_months, include_start_month = False):
     """
     Returns a DF with years/months for the time period begining
     1 month before start_month and ending n months before start_month
@@ -49,6 +49,10 @@ def get_months (start_month, year, n_months):
 
     month_years = []
     month = start_month
+
+    if include_start_month:
+        month_years.append((year, start_month))
+        n_months = n_months-1
 
     for i in range(n_months):
         if month <= 1:
@@ -95,7 +99,7 @@ def n_month_mean(start_month, start_year, country, n_months):
 
 
 def n_month_trend(start_month, start_year, country, n_months):
-    base_df = create_base_df(start_month, start_year, country, n_months)
+    base_df = create_base_df(start_month, start_year, country, n_months, include_start_month = True)
     x = base_df.index.values.reshape(-1,1)
     y = base_df['Fatalities']
     model = LinearRegression()
