@@ -116,7 +116,7 @@ def get_months (start_month, year, n_months):
 
     return date_range
 
-def create_base_df2(start_month, start_year, country, n_months):
+def create_base_df(start_month, start_year, country, n_months):
     """
     Creates a base df of n months from the start date for a given country
     This can be used for further trend analysis
