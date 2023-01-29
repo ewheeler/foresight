@@ -77,9 +77,9 @@ def create_base_df(start_month, start_year, country, n_months):
     daterange = get_months(start_month,start_year, n_months)
 
     df = ACLED[
-              (ACLED['Country'] == country)
-            & (ACLED['Date'] >= daterange[1])
-            & (ACLED['Date'] <= daterange[0])
+             (ACLED['Country'].values == country)
+           & (ACLED['Date'].values >= np.datetime64(daterange[1]))
+           & (ACLED['Date'].values <= np.datetime64(daterange[0]))
     ].reset_index()
     return df
 
