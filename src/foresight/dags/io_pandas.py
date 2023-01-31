@@ -1,3 +1,4 @@
+import hashlib
 import datetime
 from upath import UPath
 from typing import Dict
@@ -40,6 +41,9 @@ class PyArrowParquetIOManager(UPathIOManager):
         return dict()
 
     def dump_to_path(self, context: OutputContext, obj: pd.DataFrame, path: UPath):
+        # make key for dataset schema based on column names
+        dataset_key = hashlib.md5(''.join(obj.columns.values).encode()).hexdigest()[:6]
+        dataset_created = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
         dataset_path = UPath(self._base_path) / path.parts[-2]
 
         write_options = ds.ParquetFileFormat().make_write_options(compression='snappy')
@@ -53,7 +57,7 @@ class PyArrowParquetIOManager(UPathIOManager):
         # for writing and reading--*if* partitioning/appending
         # works the same way (and use pa.write_dataset instead
         # of pq.write_to_dataset)
-        basename_template = "part-{:%Y%m%d}-{{i}}.parquet".format(day_start)
+        basename_template = "part-{:%Y%m%d}-{{i}}_{}.parquet".format(day_start, dataset_key)
 
         written_paths = []
         written_metadata = []
@@ -86,6 +90,8 @@ class PyArrowParquetIOManager(UPathIOManager):
                                                   '%Y%m%d%H%M%S').strftime('%Y/%m')
         asset_obs_kwargs = {'asset_key': path.parts[-2],
                             'metadata': {"num_rows": len(obj),
+                                         "schema_key": dataset_key,
+                                         "dataset_created": dataset_created,
                                          "path": str(dataset_path),
                                          "pq_partition" : pq_partition,
                                          "pq_path": str(dataset_path / pq_partition),

@@ -104,8 +104,8 @@ gkg_ds.schema
 # https://arrow.apache.org/docs/python/dataset.html#projecting-columns
 # https://arrow.apache.org/docs/python/compute.html
 
-#pqds = pq.ParquetDataset('gcs://frsght/datasets/gdelt',
-pqds = pq.ParquetDataset('../datasets/gdelt',
+pqds = pq.ParquetDataset('gcs://frsght/datasets/gdelt',
+#pqds = pq.ParquetDataset('../datasets/gdelt',
                          use_legacy_dataset=False,
                          filters=[('num_countries', '>', 0),
                                   ('lang', '=', 'ENGLISH')])
@@ -274,7 +274,9 @@ _matches
 # create temporary dataframe with unique countries seen in each row
 # as a column containing lists while preserving index that 
 # references original dataframe indices
-_df = pd.DataFrame(enumerate(list(map(set,_matches.values))), index=_matches.index)
+# list(dict.fromkeys()) trick gives a set that preserves order
+_df = pd.DataFrame(enumerate(list(map(lambda x: list(dict.fromkeys(x)),_matches.values))), index=_matches.index)
+print(_df)
 _df = _df.rename(columns={1: 'countries'})
 # lists contain NaNs since the number of extracted countries varies per record,
 # so map a crazy double lambda expression to remove them
@@ -288,6 +290,14 @@ _df
 # finally, join the new columns to the original dataframe
 new_df = df.head().join(_df[['countries', 'num_countries']])
 new_df['num_countries'] = new_df['num_countries'].fillna(0).astype('int')
+
+print(new_df)
+
+for n in range(1, 4):
+    new_df[f"country-{n}"] = new_df['countries'].map(lambda c: c[n-1] if isinstance(c, list) and len(c) > n-1 else [])
+
+for n in range(1, 4):
+    new_df[f"country-{n}"] = new_df[f"country-{n}"].map(lambda c: '' if len(c)==0 else c)
 
 new_df
 

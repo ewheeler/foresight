@@ -132,13 +132,22 @@ def fetch_gkg(timestamp):
     _matches = matches.unstack()
     _matches.columns = _matches.columns.droplevel()
     # drop duplicate mentions of country
-    _df = pd.DataFrame(enumerate(list(map(set,_matches.values))), index=_matches.index)
+    # list(dict.fromkeys()) trick gives a set that preserves order
+    _df = pd.DataFrame(enumerate(list(map(lambda x: list(dict.fromkeys(x)),
+                                          _matches.values))), index=_matches.index)
+
     _df = _df.rename(columns={1: 'countries'})
     # remove nans introduced by droplevel
     _df['countries'] = _df['countries'].map(lambda x: list(filter(lambda y: not pd.isna(y), x)))
     _df['num_countries'] = _df['countries'].map(len)
     df = df.join(_df[['countries', 'num_countries']])
     df['num_countries'] = df['num_countries'].fillna(0).astype('int')
+    # add three columns with first three countries
+    for n in range(1, 4):
+        df[f"country-{n}"] = df['countries'].map(lambda c: c[n-1] if isinstance(c, list) and len(c) > n-1 else [])
+    # replace empty lists in new country columns with empty strings
+    for n in range(1, 4):
+        df[f"country-{n}"] = df[f"country-{n}"].map(lambda c: '' if len(c)==0 else c)
     return df
 
 @asset(
@@ -256,7 +265,7 @@ def gdelt(context, gkg, gsg) -> pd.DataFrame:
                                                  right_on='url')
     df_all['year'] = df_all['date'].dt.year
     df_all['month'] = df_all['date'].dt.month
-    df_all['yearmonth'] = df_all['date'].dt.strftime('%Y%d')
+    df_all['yearmonth'] = df_all['date'].dt.strftime('%Y%m')
 
     context.log_event(
         ExpectationResult(
