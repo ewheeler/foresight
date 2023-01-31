@@ -98,3 +98,47 @@ Also, the Jupytext menu described in the link above doesn't show for me,
 but going to `View > Activate Command Palette` menu in Jupyterlab 
 and selecting 'Pair Notebook with light Script' works for pairing a new '.ipynb'
 
+
+###  Cloud
+
+Cloud resources are provisioned and managed with Pulumi
+
+First, install on your system.
+On macos:
+```
+$ brew install pulumi
+```
+
+Configure gcp project and pulumi state storage location
+```
+$ pulumi config set gcp:project foresight-375620
+$ pulumi config set gcp:region us-central1
+$ pulumi config set gcp:zone us-central1-a
+$ pulumi login gs://frsght-pulumi-state
+```
+
+Bring up stack (VM, firewall, storage)
+```
+$ cd cloud
+$ pulumi up
+```
+
+SSH into VM
+```
+gcloud compute ssh $(pulumi stack output instanceName)
+```
+
+Put GCP service account token onto VM
+```
+gcloud compute scp ../src/foresight/foresight-375620-01e36cd13a77.json $(pulumi stack output instanceName):/home/frsght/foresight/src/foresight
+```
+
+SSH with port forwarding of dagit ui port
+```
+gcloud compute ssh $(pulumi stack output instanceName) --ssh-flag="-N" --ssh-flag="-L 3000:localhost:3000"
+```
+
+Destroy stack
+```
+$ pulumi destroy
+```
