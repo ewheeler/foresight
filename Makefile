@@ -22,7 +22,7 @@ else
 		UNAME_S := $(shell uname -s)
 		ifeq ($(UNAME_S),Linux)
 				# FIXME we are assuming 64!
-				MACHINE = linux64
+				MACHINE = linux-64
 		endif
 		ifeq ($(UNAME_S),Darwin)
 				MACHINE = osx
