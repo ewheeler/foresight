@@ -151,7 +151,6 @@ def fetch_gkg(timestamp):
     ddf = ddf.join(_df[[f"country-{n}" for n in range(1, 4)]])
     # drop records that don't have any country
     ddf = ddf.dropna(subset=['country-1'])
-    ddf = ddf.drop_duplicates(subset=['GKGRECORDID', 'DocumentIdentifier'])
     return ddf
 
 @asset(
@@ -168,6 +167,8 @@ def gkg(context) -> dd.DataFrame:
                                                          partition_start + datetime.timedelta(days=1)))
 
     ddf = dd.concat(list(map(fetch_gkg, every_fifteen_timestamps)))
+    ddf = ddf.drop_duplicates(subset=['DocumentIdentifier'])
+    ddf = ddf.drop_duplicates(subset=['GKGRECORDID'])
     ddf = ddf.repartition(partition_size='100MB')
 
     context.log_event(
@@ -219,7 +220,6 @@ def fetch_gsg(timestamp, tmp_dir):
     # dask reads ndjson in chunks
     ddf = dd.read_json(json_tmp, blocksize=2**28)
     ddf['gsg_file'] = timestamp
-    ddf = ddf.drop_duplicates(subset=['url'])
     return ddf
 
 @asset(
@@ -229,16 +229,21 @@ def fetch_gsg(timestamp, tmp_dir):
 )
 def gsg(context) -> pd.DataFrame:
     partition_key = context.asset_partition_key_for_output()
-    # TODO make tmp_dir configurable
-    tmp_dir='/tmp/foresight'
+    # TODO make tmp_base configurable
+    tmp_base ='/tmp/foresight'
+    tmp_dir = f"{tmp_base}/{context.run.run_id}"
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
     every_fifteen_timestamps = list(every_n_mins_between(partition_start,
                                                          partition_start + datetime.timedelta(days=1)))
+    # `fetch_gsg` is not an op, so it doesn't have access to `context`.
+    # create a partial function that provides `tmp_dir`
+    # to `fetch_gsg` that we can still use with `map`
     gsg_fetcher = functools.partial(fetch_gsg,
                                     tmp_dir=tmp_dir)
     ddf = dd.concat(list(map(gsg_fetcher, every_fifteen_timestamps)))
+    ddf = ddf.drop_duplicates(subset=['url'])
     ddf = ddf.repartition(partition_size='100MB')
 
     context.log_event(
@@ -283,10 +288,12 @@ def gdelt(context, gkg, gsg) -> pd.DataFrame:
             },
         )
     )
-    # clean up gsg temp files
+    # clean up gsg temp files for this run
     try:
-        # TODO make tmp_dir configurable
-        shutil.rmtree("/tmp/foresight")
+        # TODO make tmp_base configurable
+        tmp_base ='/tmp/foresight'
+        tmp_dir = f"{tmp_base}/{context.run.run_id}"
+        shutil.rmtree(tmp_dir)
     except OSError:
         pass
     

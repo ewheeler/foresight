@@ -42,11 +42,12 @@ class DaskParquetIOManager(UPathIOManager):
         day_start = datetime.datetime.strptime(str(path.stem), '%Y%m%d%H%M%S')
         part_namer = lambda n: "part-{:%Y%m%d}-{}_{}.parquet".format(day_start, n, dataset_key)
 
+        # `to_parquet` arguments for all datasets
         pq_args = {'path': dataset_path, 'schema': schema, 'ignore_divisions': True,
                    'append': dataset_path.exists(), 'engine': 'pyarrow',
                    'write_metadata_file': True, 'write_index': False,
                    'name_function': part_namer}
-        if path.parts[-2] == 'gdelt':
+        if 'year' in obj.columns and 'month' in obj.columns:
             pq_args.update({'partition_on': ['year', 'month']})
 
         obj.to_parquet(**pq_args)
