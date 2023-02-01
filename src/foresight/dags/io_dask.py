@@ -47,6 +47,10 @@ class DaskParquetIOManager(UPathIOManager):
                    'append': dataset_path.exists(), 'engine': 'pyarrow',
                    'write_metadata_file': True, 'write_index': False,
                    'name_function': part_namer}
+        # NOTE these may not be the same as the dagster partition
+        # (which is reflected in pq part filenames `day_start`)
+        # as these columns in gdelt dataset are derived from
+        # GKG's 'DATE' field, which is the article's date of publication
         if 'year' in obj.columns and 'month' in obj.columns:
             pq_args.update({'partition_on': ['year', 'month']})
 

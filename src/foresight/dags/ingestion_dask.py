@@ -163,10 +163,16 @@ def gkg(context) -> dd.DataFrame:
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
+    # NOTE hardcoded partition length
     every_fifteen_timestamps = list(every_n_mins_between(partition_start,
                                                          partition_start + datetime.timedelta(days=1)))
 
     ddf = dd.concat(list(map(fetch_gkg, every_fifteen_timestamps)))
+    ddf['DATE'] = ddf['DATE'].map(str).map(lambda x: pd.to_datetime(x, format='%Y%m%d%H%M%S', errors='coerce'))
+    ddf = ddf.dropna(subset=['DATE'])
+    # gdelt's gkg docs say that these are both unique identifiers
+    # http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf
+    # so discard any duplicates
     ddf = ddf.drop_duplicates(subset=['DocumentIdentifier'])
     ddf = ddf.drop_duplicates(subset=['GKGRECORDID'])
     ddf = ddf.repartition(partition_size='100MB')
@@ -235,6 +241,7 @@ def gsg(context) -> pd.DataFrame:
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
+    # NOTE hardcoded partition length
     every_fifteen_timestamps = list(every_n_mins_between(partition_start,
                                                          partition_start + datetime.timedelta(days=1)))
     # `fetch_gsg` is not an op, so it doesn't have access to `context`.
@@ -243,6 +250,8 @@ def gsg(context) -> pd.DataFrame:
     gsg_fetcher = functools.partial(fetch_gsg,
                                     tmp_dir=tmp_dir)
     ddf = dd.concat(list(map(gsg_fetcher, every_fifteen_timestamps)))
+    # can't find any field-level docs for gsg
+    # but assume these are meant to be unique like gkg's 'DocumentIdentifier'
     ddf = ddf.drop_duplicates(subset=['url'])
     ddf = ddf.repartition(partition_size='100MB')
 
@@ -274,9 +283,9 @@ def gsg(context) -> pd.DataFrame:
 def gdelt(context, gkg, gsg) -> pd.DataFrame:
     ddf = gkg.merge(gsg, left_on='DocumentIdentifier', right_on='url')
 
-    ddf['year'] = ddf['date'].dt.year
-    ddf['month'] = ddf['date'].dt.month
-    ddf['yearmonth'] = ddf['date'].dt.strftime('%Y%m')
+    ddf['year'] = ddf['DATE'].dt.year
+    ddf['month'] = ddf['DATE'].dt.month
+    ddf['yearmonth'] = ddf['DATE'].dt.strftime('%Y%m')
     ddf = ddf.repartition(partition_size='100MB')
 
     context.log_event(
