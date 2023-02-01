@@ -1,7 +1,7 @@
 import os
 
-from .io_pandas import local_parquet_io_manager
-from .io_pandas import gcp_parquet_io_manager
+from .io_dask import local_parquet_io_manager
+from .io_dask import gcp_parquet_io_manager
 
 # generally not a fan of anything in this file, but dagster docs said to put this in __init__.py
 # https://docs.dagster.io/guides/dagster/using-environment-variables-and-secrets#example-1-per-environment-configuration
