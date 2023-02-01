@@ -104,14 +104,13 @@ gkg_ds.schema
 # https://arrow.apache.org/docs/python/dataset.html#projecting-columns
 # https://arrow.apache.org/docs/python/compute.html
 
-pqds = pq.ParquetDataset('gcs://frsght/datasets/gdelt',
-#pqds = pq.ParquetDataset('../datasets/gdelt',
+#pqds = pq.ParquetDataset('gcs://frsght/datasets/gdelt',
+pqds = pq.ParquetDataset('../datasets/gdelt',
                          use_legacy_dataset=False,
-                         filters=[('num_countries', '>', 0),
-                                  ('lang', '=', 'ENGLISH')])
+                         filters=[('lang', '=', 'ENGLISH')])
 # -
 
-pqds.files
+pqds.files[:5]
 
 pqds.schema
 
@@ -125,6 +124,8 @@ print("file size: {} MB".format(pqds_size >> 20))
 
 emb_cols = [f"docembed-{n}" for n in range(512)]
 
+country_cols = [f"country-{n}" for n in range(1, 4)]
+
 # %%time
 # read specific subset of columns from the dataset into memory as a pyarrow.Table
 # (`read_pandas` param means it will read any pandas-specific metatdata that
@@ -133,7 +134,7 @@ emb_cols = [f"docembed-{n}" for n in range(512)]
 # NOTE that the pyarrow.Table API has some useful operations that
 # may be more computationally efficient than pandas
 # https://arrow.apache.org/docs/python/generated/pyarrow.Table.html#pyarrow.Table
-table = pqds.read_pandas(columns=['countries', 'date'] + emb_cols)
+table = pqds.read_pandas(columns=['date'] + emb_cols + country_cols)
 
 # lets see how big our filtered subset is in memory
 print("RSS (RAM): {} MB".format(pa.total_allocated_bytes() >> 20))
@@ -179,12 +180,29 @@ pbar.register()
 
 import dask.dataframe as dd
 
-filters=[('num_countries', '>', 0)]
-ddf = dd.read_parquet('gcs://frsght/datasets/gdelt', columns=['countries', 'date'] + emb_cols,
-                      split_row_groups=True, infer_divisions=True, filters=filters, engine='pyarrow')
-#ddf = dd.read_parquet('../datasets/gdelt', columns=['countries', 'date'] + emb_cols)
+filters = [('year', '=', 2020), ('month', '=', 7)]
+#ddf = dd.read_parquet('gcs://frsght/datasets/gdelt', columns=['date'] + emb_cols,
+#                      split_row_groups=True, infer_divisions=True, engine='pyarrow')
+#ddf = dd.read_parquet('../datasets/gdelt', columns=['date'] + emb_cols)
+ddf = dd.read_parquet('../datasets/gdelt', filters=filters)#, columns=['date', 'url'])
+
+ddf
 
 ddf.npartitions
+
+ddf['url'].nunique().compute()
+
+sum(ddf['url'].isnull().compute())
+
+ddf['GKGRECORDID'].nunique().compute()
+
+sum(ddf['GKGRECORDID'].isnull().compute())
+
+ddf['DocumentIdentifier'].nunique().compute()
+
+sum(ddf['DocumentIdentifier'].isnull().compute())
+
+len(ddf)
 
 # %%time
 ddf['date'] = ddf['date'].dt.tz_localize(None)
@@ -203,12 +221,11 @@ window_record_counts
 # %%time
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    # emits _lots_ of warnings about dropping timezone info
-    countries_record_counts = ddf['countries'].value_counts().compute()
-
-countries_record_counts
-
-countries_rows = ddf.explode('countries')
+    for n in range(1, 4):
+        # emits _lots_ of warnings about dropping timezone info
+        country_record_counts = ddf[f"country-{n}"].value_counts().compute()
+        print(n, sum(ddf[f"country-{n}"].isnull().compute()) / len(ddf[f"country-{n}"]))
+        print(country_record_counts)
 
 # %%time
 with warnings.catch_warnings():
@@ -239,9 +256,10 @@ txt = """
 re.findall(r'1#\w+#(?P<country>\w{2})#', txt)
 
 try:
-    df = pd.read_parquet('../datasets/gkg', columns=['V2Locations'])
+    #df = pd.read_parquet('../datasets/gkg', columns=['V2Locations'])
+    ddf = dd.read_parquet('gs://frsght/datasets/gkg', columns=['V2Locations'])
 except FileNotFoundError:
-    pass
+    print('oops')
 
 # + tags=[]
 df.fillna("", inplace=True)
@@ -254,51 +272,36 @@ pd.set_option('max_colwidth', -1)
 df.head()['V2Locations']
 
 # use pandas' extractall to apply regex to dataframe
-matches = df.head()['V2Locations'].str.extractall(r'1#\w+#(?P<country>\w{2})#')
+#matches = ddf.head()['V2Locations'].str.extractall(r'1#\w+#(?P<country>\w{2})#')
+matches = ddf['V2Locations'].str.extractall(r'1#\w+#(?P<country>\w{2})#').compute()
 
 # this returns a new multi-index dataframe of the results
 # that we'll need to reformat in order to add a 'countries'
 # column to the original dataframe
 matches
 
-# unstack multiindex
-_matches = matches.unstack()
+len(matches.index.get_level_values(0).unique())
 
-# drop one level
-_matches.columns = _matches.columns.droplevel()
+matches.groupby(level=0).nth(0).values.reshape(1, -1)[0]
 
-# now we have one row per record with
-# variable numbers of column values
+matches.groupby(level=0).nth(0).index
+
+len(matches.groupby(level=0).nth(0))
+
+top_countries = []
+for n in range(1, 11):
+    grouped = matches.groupby(level=0).nth(n)
+    top_countries.append(pd.DataFrame({f"country-{n}": grouped.values.reshape(1, -1)[0]},
+                                      index=grouped.index))
+_matches = functools.reduce(lambda x, y: pd.merge(x, y, left_index=True, right_index=True), top_countries)
 _matches
 
-# create temporary dataframe with unique countries seen in each row
-# as a column containing lists while preserving index that 
-# references original dataframe indices
-# list(dict.fromkeys()) trick gives a set that preserves order
-_df = pd.DataFrame(enumerate(list(map(lambda x: list(dict.fromkeys(x)),_matches.values))), index=_matches.index)
-print(_df)
-_df = _df.rename(columns={1: 'countries'})
-# lists contain NaNs since the number of extracted countries varies per record,
-# so map a crazy double lambda expression to remove them
-_df['countries'] = _df['countries'].map(lambda x: list(filter(lambda y: not pd.isna(y), x)))
-# pyarrow filters don't support list columns, so
-# add a column we can use to filter out records
-# that don't have any countries
-_df['num_countries'] = _df['countries'].map(len)
+_df = _matches.apply(lambda x : pd.Series(x.unique()[:4]),axis=1)
+
+_df = _df.rename(columns = dict([(n, f"country-{n+1}") for n in range(4)]))
+
 _df
 
-# finally, join the new columns to the original dataframe
-new_df = df.head().join(_df[['countries', 'num_countries']])
-new_df['num_countries'] = new_df['num_countries'].fillna(0).astype('int')
-
-print(new_df)
-
-for n in range(1, 4):
-    new_df[f"country-{n}"] = new_df['countries'].map(lambda c: c[n-1] if isinstance(c, list) and len(c) > n-1 else [])
-
-for n in range(1, 4):
-    new_df[f"country-{n}"] = new_df[f"country-{n}"].map(lambda c: '' if len(c)==0 else c)
-
-new_df
+_df.isna().sum() / len(_df)
 
 
