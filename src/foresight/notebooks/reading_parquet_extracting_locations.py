@@ -192,9 +192,15 @@ ddf.npartitions
 
 ddf['url'].nunique().compute()
 
+sum(ddf['url'].isnull().compute())
+
 ddf['GKGRECORDID'].nunique().compute()
 
+sum(ddf['GKGRECORDID'].isnull().compute())
+
 ddf['DocumentIdentifier'].nunique().compute()
+
+sum(ddf['DocumentIdentifier'].isnull().compute())
 
 len(ddf)
 
@@ -218,7 +224,7 @@ with warnings.catch_warnings():
     for n in range(1, 4):
         # emits _lots_ of warnings about dropping timezone info
         country_record_counts = ddf[f"country-{n}"].value_counts().compute()
-        print(n)
+        print(n, sum(ddf[f"country-{n}"].isnull().compute()) / len(ddf[f"country-{n}"]))
         print(country_record_counts)
 
 # %%time
