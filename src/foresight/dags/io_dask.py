@@ -50,6 +50,12 @@ class DaskParquetIOManager(UPathIOManager):
         if 'year' in obj.columns and 'month' in obj.columns:
             pq_args.update({'partition_on': ['year', 'month']})
 
+        # TODO writes can fail if multiple runs try to append to a parquet
+        # at the same time. there doesn't seem to be a great way to
+        # handle this (on aws at least) https://stackoverflow.com/q/38964736
+        # doesn't seem to lead to corrupt metadata as retrying the run works
+        # for now we'll retry at the job/run level, but if it
+        # happens a lot we can catch pyarrow.lib.ArrowInvalid and retry here
         obj.to_parquet(**pq_args)
 
         pq_partition = datetime.datetime.strptime(str(path.stem),
