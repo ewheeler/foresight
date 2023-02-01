@@ -8,9 +8,7 @@ import numpy as np
 pd.options.display.expand_frame_repr = False
 pd.options.display.max_rows = 100
 
-#humdata_path = os.path.normpath(os.environ['humdata_path'])
-
-humdata_path = os.path.normpath(r'..\..\..\..\Data\ACLED_via_humdata_012623.xlsx')
+humdata_path = os.path.normpath(os.environ['humdata_path'])
 
 ACLED = pd.read_excel(humdata_path, sheet_name='Data')
 
