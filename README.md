@@ -119,29 +119,38 @@ $ pulumi login gs://frsght-pulumi-state
 
 Bring up stack (VM, firewall, storage)
 Pulumi will also create a `frsght` user on
-the VM and clone this repo in their home directory
+the VM and clone this repo into their home directory
 ```
 $ cd cloud
 $ pulumi up
 ```
 
-SSH into VM via gcloud which will sort out keys
-```
-$ gcloud compute ssh $(pulumi stack output instanceName)
-```
-
 Run script to create conda env, install dependencies,
-upload secrets, etc
+upload files, and run dagit etc
+If everything runs successfully, the final status
+output should show `dagit` and `dagster-daemon` as
+'RUNNING' with uptime > 5 seconds.
+Script is idempotent, so rerun if needed.
+(note that seeing bash conda not found and a big conda
+error report are, well, expected. potentially could
+remove some steps but its working and has taken
+plenty of conda wrestling to work so
+don't want to touch anything lol)
 ```
 $ python bootstrap_instance.py
 ```
 
-SSH with port forwarding of dagit ui port
+SSH via gcloud with port forwarding of dagit ui port
 ```
 $ gcloud compute ssh $(pulumi stack output instanceName) --ssh-flag="-N" --ssh-flag="-L 3000:localhost:3000"
 ```
 
-Destroy stack
+Or SSH into VM via gcloud without port forwarding
+```
+$ gcloud compute ssh $(pulumi stack output instanceName)
+```
+
+Destroy stack (e.g., shutdown/delete all the GCP resources)
 ```
 $ pulumi destroy
 ```
