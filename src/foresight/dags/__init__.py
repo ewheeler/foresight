@@ -27,7 +27,8 @@ resources = {
             {
                 "base_path": "gs://frsght/datasets",
                 "project": "foresight-375620",
-                "token": "foresight-375620-01e36cd13a77.json"
+                "token": os.getenv("GOOGLE_APPLICATION_CREDENTIALS",
+                                   "foresight-375620-01e36cd13a77.json")
             }
         ),
     },
