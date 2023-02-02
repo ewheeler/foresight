@@ -63,6 +63,7 @@ if IN_COLAB:
 import logging
 import warnings
 import operator
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -170,7 +171,7 @@ df_means
 
 from dask.distributed import Client
 client = Client(n_workers=4, threads_per_worker=2, processes=True,
-                memory_limit='12GB', silence_logs=logging.ERROR)
+                memory_limit='4GB', silence_logs=logging.ERROR)
 
 client
 
@@ -187,6 +188,20 @@ filters = [('year', '=', 2020), ('month', '=', 7)]
 ddf = dd.read_parquet('../datasets/gdelt', filters=filters)#, columns=['date', 'url'])
 
 ddf
+
+_dates = ddf[['DATE', 'date']]
+_dates.compute()
+
+_dates['DATE'] = _dates['DATE'].map(str).map(lambda x: pd.to_datetime(x, format='%Y%m%d%H%M%S', errors='coerce'))
+
+_dates['delta'] = _dates.apply(lambda r: r['DATE'] - r['date'], axis=1)
+
+dates = _dates.compute()
+dates
+
+sum(dates['agree'])
+
+dates[dates['delta'] > datetime.timedelta(minutes=5)]
 
 ddf.npartitions
 

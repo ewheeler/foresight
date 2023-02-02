@@ -81,3 +81,4 @@ src/foresight/storage
 src/foresight/schedules
 src/foresight/datasets
 src/foresight/.env
+cloud/venv
