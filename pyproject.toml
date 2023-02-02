@@ -24,6 +24,7 @@ openpyxl = "^3.0.10"
 dagit = "^1.1.10"
 universal-pathlib = "^0.0.21"
 darts = { version = "^0.23.1", markers = "platform_machine == 'x86_64'" }
+paramiko = "^3.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

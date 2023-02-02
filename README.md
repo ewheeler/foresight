@@ -118,24 +118,27 @@ $ pulumi login gs://frsght-pulumi-state
 ```
 
 Bring up stack (VM, firewall, storage)
+Pulumi will also create a `frsght` user on
+the VM and clone this repo in their home directory
 ```
 $ cd cloud
 $ pulumi up
 ```
 
-SSH into VM
+SSH into VM via gcloud which will sort out keys
 ```
-gcloud compute ssh $(pulumi stack output instanceName)
+$ gcloud compute ssh $(pulumi stack output instanceName)
 ```
 
-Put GCP service account token onto VM
+Run script to create conda env, install dependencies,
+upload secrets, etc
 ```
-gcloud compute scp ../src/foresight/foresight-375620-01e36cd13a77.json $(pulumi stack output instanceName):/home/frsght/foresight/src/foresight
+$ python bootstrap_instance.py
 ```
 
 SSH with port forwarding of dagit ui port
 ```
-gcloud compute ssh $(pulumi stack output instanceName) --ssh-flag="-N" --ssh-flag="-L 3000:localhost:3000"
+$ gcloud compute ssh $(pulumi stack output instanceName) --ssh-flag="-N" --ssh-flag="-L 3000:localhost:3000"
 ```
 
 Destroy stack
