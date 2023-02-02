@@ -25,7 +25,7 @@ compute_firewall = compute.Firewall(
 # A simple bash script that will run when the webserver is initalized
 startup_script = """#!/bin/bash
 sudo useradd frsght -m -d /home/frsght
-git clone -b cloud https://github.com/ewheeler/foresight /home/frsght/foresight
+git clone https://github.com/ewheeler/foresight /home/frsght/foresight
 """
 
 instance_addr = compute.address.Address("address")
