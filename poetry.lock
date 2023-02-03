@@ -1071,18 +1071,22 @@ files = [
 
 [[package]]
 name = "dagit"
+
 version = "1.1.14"
+
 description = "Web UI for dagster."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
+
     {file = "dagit-1.1.14-py3-none-any.whl", hash = "sha256:72d0a4b351748db406aed1c131b6f4ac705a90fdc6f28c068ca8797bf547aa62"},
     {file = "dagit-1.1.14.tar.gz", hash = "sha256:cb21598b3143cedfd6e7338ac4ccaa30cac879dca5fa2c4940e5340591e278b0"},
 ]
 
 [package.dependencies]
 click = ">=7.0,<9.0"
+
 dagster = "1.1.14"
 dagster-graphql = "1.1.14"
 starlette = "*"
@@ -1094,14 +1098,18 @@ test = ["starlette[full]"]
 
 [[package]]
 name = "dagster"
+
 version = "1.1.14"
+
 description = "The data orchestration platform built for productivity."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
+
     {file = "dagster-1.1.14-py3-none-any.whl", hash = "sha256:cc96bb17e81c1f9015da2cd1da4610cc1e362c2d034517d0b199cebee1154716"},
     {file = "dagster-1.1.14.tar.gz", hash = "sha256:26ce119811880d1546792053bb5fe2c2b404d93378c51da7a085460dbc52b561"},
+
 ]
 
 [package.dependencies]
@@ -1143,18 +1151,22 @@ test = ["buildkite-test-collector", "docker", "grpcio-tools (>=1.32.0,<1.44.0)",
 
 [[package]]
 name = "dagster-graphql"
+
 version = "1.1.14"
+
 description = "The GraphQL frontend to python dagster."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
+
     {file = "dagster-graphql-1.1.14.tar.gz", hash = "sha256:df0562e48853718c7fd2459905017a618f6c39a579789eb05d59f24b70aee1e0"},
     {file = "dagster_graphql-1.1.14-py3-none-any.whl", hash = "sha256:f1f4d1761f23e7d2f51fefe572e5efda2649b5c5dcd9a77fb56f83163cc88745"},
 ]
 
 [package.dependencies]
 dagster = "1.1.14"
+
 gql = {version = ">=3.0.0", extras = ["requests"]}
 graphene = ">=3"
 requests = "*"
@@ -2573,14 +2585,18 @@ test = ["pexpect"]
 
 [[package]]
 name = "jupyter-core"
+
 version = "5.2.0"
+
 description = "Jupyter core package. A base package on which Jupyter projects rely."
 category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
+
     {file = "jupyter_core-5.2.0-py3-none-any.whl", hash = "sha256:4bdc2928c37f6917130c667d8b8708f20aee539d8283c6be72aabd2a4b4c83b0"},
     {file = "jupyter_core-5.2.0.tar.gz", hash = "sha256:1407cdb4c79ee467696c04b76633fc1884015fa109323365a6372c8e890cc83f"},
+
 ]
 
 [package.dependencies]
@@ -3949,6 +3965,13 @@ files = [
     {file = "Pillow-9.4.0-1-cp39-cp39-macosx_10_10_x86_64.whl", hash = "sha256:b8c2f6eb0df979ee99433d8b3f6d193d9590f735cf12274c108bd954e30ca858"},
     {file = "Pillow-9.4.0-1-pp38-pypy38_pp73-macosx_10_10_x86_64.whl", hash = "sha256:b70756ec9417c34e097f987b4d8c510975216ad26ba6e57ccb53bc758f490dab"},
     {file = "Pillow-9.4.0-1-pp39-pypy39_pp73-macosx_10_10_x86_64.whl", hash = "sha256:43521ce2c4b865d385e78579a082b6ad1166ebed2b1a2293c3be1d68dd7ca3b9"},
+    {file = "Pillow-9.4.0-2-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:9d9a62576b68cd90f7075876f4e8444487db5eeea0e4df3ba298ee38a8d067b0"},
+    {file = "Pillow-9.4.0-2-cp311-cp311-macosx_10_10_x86_64.whl", hash = "sha256:87708d78a14d56a990fbf4f9cb350b7d89ee8988705e58e39bdf4d82c149210f"},
+    {file = "Pillow-9.4.0-2-cp37-cp37m-macosx_10_10_x86_64.whl", hash = "sha256:8a2b5874d17e72dfb80d917213abd55d7e1ed2479f38f001f264f7ce7bae757c"},
+    {file = "Pillow-9.4.0-2-cp38-cp38-macosx_10_10_x86_64.whl", hash = "sha256:83125753a60cfc8c412de5896d10a0a405e0bd88d0470ad82e0869ddf0cb3848"},
+    {file = "Pillow-9.4.0-2-cp39-cp39-macosx_10_10_x86_64.whl", hash = "sha256:9e5f94742033898bfe84c93c831a6f552bb629448d4072dd312306bab3bd96f1"},
+    {file = "Pillow-9.4.0-2-pp38-pypy38_pp73-macosx_10_10_x86_64.whl", hash = "sha256:013016af6b3a12a2f40b704677f8b51f72cb007dac785a9933d5c86a72a7fe33"},
+    {file = "Pillow-9.4.0-2-pp39-pypy39_pp73-macosx_10_10_x86_64.whl", hash = "sha256:99d92d148dd03fd19d16175b6d355cc1b01faf80dae93c6c3eb4163709edc0a9"},
     {file = "Pillow-9.4.0-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:2968c58feca624bb6c8502f9564dd187d0e1389964898f5e9e1fbc8533169157"},
     {file = "Pillow-9.4.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:c5c1362c14aee73f50143d74389b2c158707b4abce2cb055b7ad37ce60738d47"},
     {file = "Pillow-9.4.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bd752c5ff1b4a870b7661234694f24b1d2b9076b8bf337321a814c612665f343"},
@@ -5173,14 +5196,17 @@ win32 = ["pywin32"]
 
 [[package]]
 name = "setuptools"
+
 version = "67.0.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
+
     {file = "setuptools-67.0.0-py3-none-any.whl", hash = "sha256:9d790961ba6219e9ff7d9557622d2fe136816a264dd01d5997cfc057d804853d"},
     {file = "setuptools-67.0.0.tar.gz", hash = "sha256:883131c5b6efa70b9101c7ef30b2b7b780a4283d5fc1616383cdf22c83cbefe6"},
+
 ]
 
 [package.extras]

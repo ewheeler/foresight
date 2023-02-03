@@ -79,6 +79,13 @@ src/foresight/history
 src/foresight/logs
 src/foresight/storage
 src/foresight/schedules
+
+srv/foresight/.env
+
+#Secrets
+ACLED_Key.txt
+
 src/foresight/datasets
 src/foresight/.env
 cloud/venv
+
