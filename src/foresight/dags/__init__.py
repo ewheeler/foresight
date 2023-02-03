@@ -1,5 +1,8 @@
 import os
 
+from dask.distributed import Client
+client = Client(os.getenv('DASK_SCHEDULER', None))
+
 from .io_dask import local_parquet_io_manager
 from .io_dask import gcp_parquet_io_manager
 
