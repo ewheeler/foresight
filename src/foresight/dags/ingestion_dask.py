@@ -1,6 +1,7 @@
 import json
 import math
 import gzip
+import shutil
 import calendar
 import datetime
 import pathlib
@@ -10,6 +11,7 @@ import urllib.request
 
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 from dagster import Definitions
 from dagster import AssetSelection
 from dagster import MonthlyPartitionsDefinition
@@ -117,77 +119,87 @@ def fetch_gkg(timestamp):
     # TODO unzip first? then dask can read csv in chunks of blocksize
     # TODO is this utf8 or cp1252?
     try:
-        df = pd.read_csv(f"http://data.gdeltproject.org/gdeltv2/{timestamp}.gkg.csv.zip",
+        ddf = dd.read_csv(f"http://data.gdeltproject.org/gdeltv2/{timestamp}.gkg.csv.zip",
                           sep='\t', encoding="utf8", on_bad_lines='skip', header=None,
-                          compression='zip', encoding_errors="ignore")
-                         
+                          blocksize=None, compression='zip', dtype=gkg_meta,
+                          encoding_errors="ignore")
     except (UnicodeEncodeError, FileNotFoundError, EOFError):
-        df = pd.DataFrame(np.zeros((2, 27)))
-    df.columns = gkg_headers
-    df['gkg_file'] = timestamp
+        ddf = dd.from_array(np.zeros((2, 27)))
+    ddf.columns = gkg_headers
+    ddf['gkg_file'] = timestamp
 
     # extract country codes from V2Locations
-    matches = df['V2Locations'].str.extractall(r'1#\w+#(?P<country>\w{2})#')
-    # reformat results
-    _matches = matches.unstack()
-    _matches.columns = _matches.columns.droplevel()
-    # drop duplicate mentions of country
-    # list(dict.fromkeys()) trick gives a set that preserves order
-    _df = pd.DataFrame(enumerate(list(map(lambda x: list(dict.fromkeys(x)),
-                                          _matches.values))), index=_matches.index)
+    matches = ddf['V2Locations'].str.extractall(r'1#\w+#(?P<country>\w{2})#').compute()
 
-    _df = _df.rename(columns={1: 'countries'})
-    # remove nans introduced by droplevel
-    _df['countries'] = _df['countries'].map(lambda x: list(filter(lambda y: not pd.isna(y), x)))
-    _df['num_countries'] = _df['countries'].map(len)
-    df = df.join(_df[['countries', 'num_countries']])
-    df['num_countries'] = df['num_countries'].fillna(0).astype('int')
-    # add three columns with first three countries
-    for n in range(1, 4):
-        df[f"country-{n}"] = df['countries'].map(lambda c: c[n-1] if isinstance(c, list) and len(c) > n-1 else [])
-    # replace empty lists in new country columns with empty strings
-    for n in range(1, 4):
-        df[f"country-{n}"] = df[f"country-{n}"].map(lambda c: '' if len(c)==0 else c)
-    return df
+    top_countries = []
+    for n in range(1, 11):
+        # get the nth item from each group
+        # where level_0 is the ddf record's index
+        grouped = matches.groupby(level=0).nth(n)
+        top_countries.append(pd.DataFrame({f"country-{n}": grouped.values.reshape(1, -1)[0]},
+                                          index=grouped.index))
+    # merge list of dataframes
+    _matches = functools.reduce(lambda x, y: dd.merge(x, y,
+                                                      left_index=True,
+                                                      right_index=True), top_countries)
+
+    # get first few unique countries
+    _df = _matches.apply(lambda x : pd.Series(x.unique()[:4]),axis=1)
+    _df = _df.rename(columns = dict([(n, f"country-{n+1}") for n in range(4)]))
+
+    # join new country columns to ddf
+    ddf = ddf.join(_df[[f"country-{n}" for n in range(1, 4)]])
+    # drop records that don't have any country
+    ddf = ddf.dropna(subset=['country-1'])
+    return ddf
 
 @asset(
     partitions_def=daily_partitions_def,
     code_version="1",
 	io_manager_key="parquet_io_manager"
 )
-def gkg(context) -> pd.DataFrame:
+def gkg(context) -> dd.DataFrame:
     partition_key = context.asset_partition_key_for_output()
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
+    # NOTE hardcoded partition length
     every_fifteen_timestamps = list(every_n_mins_between(partition_start,
                                                          partition_start + datetime.timedelta(days=1)))
 
-    df = pd.concat(list(map(fetch_gkg, every_fifteen_timestamps)))
+    ddf = dd.concat(list(map(fetch_gkg, every_fifteen_timestamps)))
+    ddf['DATE'] = ddf['DATE'].map(str).map(lambda x: pd.to_datetime(x, format='%Y%m%d%H%M%S', errors='coerce'))
+    ddf = ddf.dropna(subset=['DATE'])
+    # gdelt's gkg docs say that these are both unique identifiers
+    # http://data.gdeltproject.org/documentation/GDELT-Global_Knowledge_Graph_Codebook-V2.1.pdf
+    # so discard any duplicates
+    ddf = ddf.drop_duplicates(subset=['DocumentIdentifier'])
+    ddf = ddf.drop_duplicates(subset=['GKGRECORDID'])
+    ddf = ddf.repartition(partition_size='100MB')
 
     context.log_event(
         ExpectationResult(
-            success=len(df) > 0,
+            success=len(ddf) > 0,
             description="ensure dataframe has rows",
             metadata={
                 "partition_start": partition_date_str,
-                "raw_count": len(df),
+                "raw_count": len(ddf),
             },
         )
     )
-    yield Output(df, metadata={"num_rows": len(df)})
+    yield Output(ddf, metadata={"num_rows": len(ddf)})
 
 # TODO make into op?
-def fetch_gsg(timestamp, tmp_dir='/tmp'):
+def fetch_gsg(timestamp, tmp_dir):
     pathlib.Path(tmp_dir).mkdir(parents=True, exist_ok=True)
     # timestamp is UTC "YYYYMMDDHHMMSS"
     gsg_filename = f"{timestamp}.gsg.docembed.json.gz"
     gsg_url = f"http://data.gdeltproject.org/gdeltv3/gsg_docembed/{gsg_filename}"
 
     gz_tmp = f"{tmp_dir}/{gsg_filename}"
-    json_tmp = f"{tmp_dir}/{timestamp}.gsg.docembed.ndjson"
+    json_tmp = f"{tmp_dir}/{timestamp}.gsg.docembed.json"
 
-    # get gdelt file if its not present in tmp_dir
+    # get gdelt file
     if not pathlib.Path(gz_tmp).is_file():
         urllib.request.urlretrieve(gsg_url, gz_tmp)
 
@@ -205,14 +217,16 @@ def fetch_gsg(timestamp, tmp_dir='/tmp'):
         for record in iter(SerializableGenerator(records)):
             # explode column 'docembed' (list of floats) into 512 columns
             embeds = dict([(f'docembed-{n}', i) for n, i in enumerate(record['docembed'])])
+            # ditch original column containing 512 item lists
             _ = record.pop('docembed')
             record.update(embeds)
+            # write each record as a json object on a new line
             f.write(encoder.encode(record) + '\n')
 
-    # we wrote ndjson, so need the lines param
-    df = pd.read_json(json_tmp, lines=True)
-    df['gsg_file'] = timestamp
-    return df
+    # dask reads ndjson in chunks
+    ddf = dd.read_json(json_tmp, blocksize=2**28)
+    ddf['gsg_file'] = timestamp
+    return ddf
 
 @asset(
     partitions_def=daily_partitions_def,
@@ -221,25 +235,37 @@ def fetch_gsg(timestamp, tmp_dir='/tmp'):
 )
 def gsg(context) -> pd.DataFrame:
     partition_key = context.asset_partition_key_for_output()
+    # TODO make tmp_base configurable
+    tmp_base ='/tmp/foresight'
+    tmp_dir = f"{tmp_base}/{context.run.run_id}"
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
+    # NOTE hardcoded partition length
     every_fifteen_timestamps = list(every_n_mins_between(partition_start,
                                                          partition_start + datetime.timedelta(days=1)))
-
-    df = pd.concat(list(map(fetch_gsg, every_fifteen_timestamps)))
+    # `fetch_gsg` is not an op, so it doesn't have access to `context`.
+    # create a partial function that provides `tmp_dir`
+    # to `fetch_gsg` that we can still use with `map`
+    gsg_fetcher = functools.partial(fetch_gsg,
+                                    tmp_dir=tmp_dir)
+    ddf = dd.concat(list(map(gsg_fetcher, every_fifteen_timestamps)))
+    # can't find any field-level docs for gsg
+    # but assume these are meant to be unique like gkg's 'DocumentIdentifier'
+    ddf = ddf.drop_duplicates(subset=['url'])
+    ddf = ddf.repartition(partition_size='100MB')
 
     context.log_event(
         ExpectationResult(
-            success=len(df) > 0,
+            success=len(ddf) > 0,
             description="ensure dataframe has rows",
             metadata={
                 "partition_start": partition_date_str,
-                "raw_count": len(df),
+                "raw_count": len(ddf),
             },
         )
     )
-    yield Output(df, metadata={"num_rows": len(df)})
+    yield Output(ddf, metadata={"num_rows": len(ddf)})
 
 @asset(
     partitions_def=daily_partitions_def,
@@ -255,28 +281,32 @@ def gsg(context) -> pd.DataFrame:
     }
 )
 def gdelt(context, gkg, gsg) -> pd.DataFrame:
-    # pyarrow cannot currently join tables that have lists
-    # https://github.com/apache/arrow/issues/32504
-    # so instead of joining the two pyarrow.dataset.FileSystemDataset
-    #df = gkg.join(gsg, keys='DocumentIdentifier', right_keys='url')
-    # we convert to pyarrow.table and then to pandas.DataFrame to merge
-    df_all = gkg.read_pandas().to_pandas().merge(gsg.read_pandas().to_pandas(),
-                                                 left_on='DocumentIdentifier',
-                                                 right_on='url')
-    df_all['year'] = df_all['date'].dt.year
-    df_all['month'] = df_all['date'].dt.month
-    df_all['yearmonth'] = df_all['date'].dt.strftime('%Y%m')
+    ddf = gkg.merge(gsg, left_on='DocumentIdentifier', right_on='url')
+
+    ddf['year'] = ddf['DATE'].dt.year
+    ddf['month'] = ddf['DATE'].dt.month
+    ddf['yearmonth'] = ddf['DATE'].dt.strftime('%Y%m')
+    ddf = ddf.repartition(partition_size='100MB')
 
     context.log_event(
         ExpectationResult(
-            success=len(df_all) > 0,
+            success=len(ddf) > 0,
             description="ensure dataframe has rows",
             metadata={
-                "raw_count": len(df_all),
+                "raw_count": len(ddf),
             },
         )
     )
-    yield Output(df_all, metadata={"num_rows": len(df_all)})
+    # clean up gsg temp files for this run
+    try:
+        # TODO make tmp_base configurable
+        tmp_base ='/tmp/foresight'
+        tmp_dir = f"{tmp_base}/{context.run.run_id}"
+        shutil.rmtree(tmp_dir)
+    except OSError:
+        pass
+    
+    yield Output(ddf, metadata={"num_rows": len(ddf)})
 
 gdelt_job = define_asset_job(
     name="gdelt_job",

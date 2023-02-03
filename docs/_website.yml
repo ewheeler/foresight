@@ -26,3 +26,7 @@ website:
             file: chapter_02.qmd
           - text: "Chapter 3"
             file: chapter_03.qmd
+      - section: "CPA"
+        contents:
+          - text: "Critical path analysis"
+            file: cpa.qmd

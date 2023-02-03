@@ -35,6 +35,10 @@ mamba update --file conda_platform_locks/conda-linux-64.lock
 poetry update
 ```
 
+On an M1 mac, installing the `darts` package via conda and poetry failed,
+so it is included in `pyproject.toml` with an environment marker for `x86_64`
+systems. M1 mac users will need to `pip install darts` :(
+
 
 ### Documents
 
@@ -94,3 +98,59 @@ Also, the Jupytext menu described in the link above doesn't show for me,
 but going to `View > Activate Command Palette` menu in Jupyterlab 
 and selecting 'Pair Notebook with light Script' works for pairing a new '.ipynb'
 
+
+###  Cloud
+
+Cloud resources are provisioned and managed with Pulumi
+
+First, install on your system.
+On macos:
+```
+$ brew install pulumi
+```
+
+Configure gcp project and pulumi state storage location
+```
+$ pulumi config set gcp:project foresight-375620
+$ pulumi config set gcp:region us-central1
+$ pulumi config set gcp:zone us-central1-a
+$ pulumi login gs://frsght-pulumi-state
+```
+
+Bring up stack (VM, firewall, storage)
+Pulumi will also create a `frsght` user on
+the VM and clone this repo into their home directory
+```
+$ cd cloud
+$ pulumi up
+```
+
+Run script to create conda env, install dependencies,
+upload files, and run dagit etc
+If everything runs successfully, the final status
+output should show `dagit` and `dagster-daemon` as
+'RUNNING' with uptime > 5 seconds.
+Script is idempotent, so rerun if needed.
+(note that seeing bash conda not found and a big conda
+error report are, well, expected. potentially could
+remove some steps but its working and has taken
+plenty of conda wrestling to work so
+don't want to touch anything lol)
+```
+$ python bootstrap_instance.py
+```
+
+SSH via gcloud with port forwarding of dagit ui port
+```
+$ gcloud compute ssh $(pulumi stack output instanceName) --ssh-flag="-N" --ssh-flag="-L 3000:localhost:3000"
+```
+
+Or SSH into VM via gcloud without port forwarding
+```
+$ gcloud compute ssh $(pulumi stack output instanceName)
+```
+
+Destroy stack (e.g., shutdown/delete all the GCP resources)
+```
+$ pulumi destroy
+```
