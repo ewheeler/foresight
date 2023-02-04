@@ -15,6 +15,7 @@ dependencies:
   - pytorch::pytorch=1.13.1
   - pandas=1.5.2
   - pyarrow=10.0.1
+  - grpcio=1.44.0
 
 # Non-standard section listing target platforms for conda-lock:
 platforms:

@@ -10,6 +10,8 @@ parser.add_argument("username", type=str, default="ewheeler",
                     help="username on VM", nargs='?')
 parser.add_argument("pkey", type=str, default="/Users/ewheeler/.ssh/google_compute_engine",
                     help="local path to private key", nargs='?')
+#parser.add_argument("ip", type=str, default="34.123.171.183",
+#                    help="ip", nargs='?')
 args = parser.parse_args()
 
 username = args.username
@@ -18,10 +20,16 @@ pkey_path = args.pkey
 # find this script's directory
 dir_path = pathlib.Path(__file__).resolve().parent
 
+#if args.ip:
+#    hostname = args.ip
+#else:
+if True:
 # get IP address of new VM
-_hostname = subprocess.run(["pulumi", "stack", "output", "instanceIP"], capture_output=True)
-if not _hostname.stderr:
-    hostname = _hostname.stdout.decode().strip()
+    _hostname = subprocess.run(["pulumi", "stack", "output", "instanceIP"], capture_output=True)
+    if not _hostname.stderr:
+        hostname = _hostname.stdout.decode().strip()
+    else:
+        print(_hostname.stderr)
 print(hostname)
 
 pkey = paramiko.RSAKey.from_private_key_file(pkey_path)

@@ -11,7 +11,6 @@ import urllib.request
 
 import numpy as np
 import pandas as pd
-import dask.dataframe as dd
 from dagster import Definitions
 from dagster import AssetSelection
 from dagster import MonthlyPartitionsDefinition
@@ -25,6 +24,13 @@ from dagster import ExpectationResult
 
 from dags import deployment_name
 from dags import resources
+
+import dask
+import dask.dataframe as dd
+from dask.distributed import Client
+
+client = Client('tcp://127.0.0.1:8786')
+dask.config.set(scheduler='distributed')
 
 
 # map of month name to month number
