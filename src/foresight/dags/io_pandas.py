@@ -73,7 +73,6 @@ class PyArrowParquetIOManager(UPathIOManager):
                          existing_data_behavior="overwrite_or_ignore",
                          format="parquet", file_options=write_options,
                          partitioning=partitions,
-                         partitioning_flavor="hive",
                          file_visitor=file_visitor)
 
         # Write the ``_common_metadata`` parquet file without row groups statistics
