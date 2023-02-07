@@ -1,4 +1,5 @@
 load_from:
   - python_file:
-      relative_path: ./dags/ingestion_dask.py
+    #relative_path: ./dags/ingestion_dask.py
+      relative_path: ./dags/ingestion_polars.py
       working_directory: .
