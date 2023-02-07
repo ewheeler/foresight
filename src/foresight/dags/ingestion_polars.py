@@ -84,33 +84,37 @@ def fetch_gkg(timestamp, tmp_dir):
         # get gdelt file
         if not pathlib.Path(gz_tmp).is_file():
             urllib.request.urlretrieve(gkg_url, gz_tmp)
-        df = pl.read_csv(ZipFile(gz_tmp).read(f"{timestamp}.gkg.csv"),
+            with ZipFile(gz_tmp, 'r') as zip_ref:
+                zip_ref.extractall(tmp_dir)
+        df = pl.scan_csv(f"{tmp_dir}/{timestamp}.gkg.csv",
                          sep='\t', encoding="utf8", ignore_errors=True, has_header=False)
                          
     except (UnicodeEncodeError, FileNotFoundError, EOFError, urllib.error.HTTPError):
-        df = pl.DataFrame(np.zeros((2, 27))).select(pl.all().cast(str, strict=False))
+        df = pl.DataFrame(np.zeros((2, 27))).select(pl.all().cast(str, strict=False)).lazy()
 
-    df.columns = gkg_headers
-    df = df.with_column(pl.col("DATE").cast(str, strict=False).str.strptime(pl.Datetime, "%Y%m%d%H%M%S", strict=False).alias("DATE"))
-    df = df.with_columns(pl.col("V2Locations").cast(str, strict=False).alias("V2Locations"))
-    df = df.with_columns(pl.col("GKGRECORDID").cast(str, strict=False).alias("GKGRECORDID"))
-    df = df.with_columns(pl.col("SourceCollectionIdentifier").cast(pl.Int64, strict=False).alias("SourceCollectionIdentifier"))
-    df = df.with_column(pl.lit(timestamp).alias('gkg_file'))
+    df = df.rename(dict(zip(df.columns, gkg_headers))).collect()
+
+    df = df.lazy().with_columns([
+        pl.col("DATE").cast(str, strict=False).str.strptime(pl.Datetime, "%Y%m%d%H%M%S", strict=False).alias("DATE"),
+        pl.col("V2Locations").cast(str, strict=False).alias("V2Locations"),
+        pl.col("GKGRECORDID").cast(str, strict=False).alias("GKGRECORDID"),
+        pl.col("SourceCollectionIdentifier").cast(pl.Int64, strict=False).alias("SourceCollectionIdentifier"),
+        pl.lit(timestamp).alias('gkg_file')]).collect()
 
     # extract countries from V2Locations
     # extract_all doesnt: https://github.com/pola-rs/polars/issues/4751
-    df = df.with_columns(
+    df = df.lazy().with_columns(
              df.select(
-                pl.col("V2Locations").str.extract_all(r'1#\w+#(?P<country>\w{2})#').arr.eval(pl.element().str.extract(r'1#\w+#(?P<country>\w{2})#')).alias('countries')))
+                pl.col('V2Locations').str.extract_all(r'1#\w+#(?P<country>\w{2})#').arr.eval(pl.element().str.extract(r'1#\w+#(?P<country>\w{2})#')).alias('countries'))).collect()
     # find set of 10 first occurring countries
-    df = df.with_columns(
+    df = df.lazy().with_columns(
             df.select(
-                    pl.col("countries").arr.eval(pl.all().unique(maintain_order=True).head(10)).alias('top_countries')))
+                    pl.col("countries").arr.eval(pl.all().unique(maintain_order=True).head(10)).alias('top_countries'))).collect()
 
     # first three get their own columns
-    df = df.with_columns(df.select([pl.col('top_countries').arr.get(0).alias("country-1"),
-                                    pl.col('top_countries').arr.get(1).alias("country-2"),
-                                    pl.col('top_countries').arr.get(2).alias("country-3"),]))
+    df = df.lazy().with_columns(df.select([pl.col('top_countries').arr.get(0).alias("country-1"),
+                                           pl.col('top_countries').arr.get(1).alias("country-2"),
+                                           pl.col('top_countries').arr.get(2).alias("country-3"),])).collect()
     # discard intermediary columns
     df.drop_in_place('top_countries')
     df.drop_in_place('countries')
@@ -190,7 +194,7 @@ def fetch_gsg(timestamp, tmp_dir):
             f.write(encoder.encode(record) + '\n')
 
     # https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_ndjson.html
-    df = pl.read_ndjson(json_tmp)
+    df = pl.scan_ndjson(json_tmp)
     df = df.with_column(pl.lit(timestamp).alias('gsg_file'))
     return df
 
@@ -218,6 +222,7 @@ def gsg(context) -> pl.DataFrame:
                                     tmp_dir=tmp_dir)
     df = pl.concat(list(map(gsg_fetcher, windows)))
     df = df.unique(subset=["url"])
+    df = df.collect()
 
     context.log_event(
         ExpectationResult(
