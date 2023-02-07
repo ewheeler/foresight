@@ -1,10 +1,8 @@
 import json
-import math
 import gzip
-import calendar
+import shutil
 import datetime
 import pathlib
-import itertools
 import functools
 import urllib.request
 
@@ -23,48 +21,12 @@ from dagster import ExpectationResult
 
 from dags import deployment_name
 from dags import resources
+from dags.utils import every_n_mins_between
+from dags.utils import json_decode_many
+from dags.utils import SerializableGenerator
+from dags.utils import month_map
+from dags.utils import quarter_map
 
-
-# map of month name to month number
-month_map = dict([(m, n) for n, m in enumerate(calendar.month_name[1:], 1)])
-
-# return quarter for given month number
-quarter = lambda m: math.ceil(float(m) / 3)
-
-def datetime_range(start, end, delta):
-    current = start
-    while current < end:
-        yield current
-        current += delta
-
-def every_n_mins_between(start, end, minutes=15):
-    return (dt.strftime('%Y%m%d%H%M%S') for dt in datetime_range(start, end, datetime.timedelta(minutes=minutes)))
-
-class SerializableGenerator(list):
-    """Generator that is serializable by JSON"""
-
-    def __init__(self, iterable):
-        tmp_body = iter(iterable)
-        try:
-            self._head = iter([next(tmp_body)])
-            self.append(tmp_body)
-        except StopIteration:
-            self._head = []
-
-    def __iter__(self):
-        return itertools.chain(self._head, *self[:1])
-
-def json_decode_many(s):
-    # https://stackoverflow.com/a/68942444
-    decoder = json.JSONDecoder()
-    _w = json.decoder.WHITESPACE.match
-    idx = 0
-    while True:
-        idx = _w(s, idx).end() # skip leading whitespace
-        if idx >= len(s):
-            break
-        obj, idx = decoder.raw_decode(s, idx=idx)
-        yield obj
 
 daily_partitions_def = DailyPartitionsDefinition(start_date="20200101010101", fmt='%Y%m%d%H%M%S')
 
@@ -84,7 +46,7 @@ def acled(context) -> pd.DataFrame:
     hdx_latest_resource_id = hdx_response['result']['resources'][0]['download_url'].split('/')[6]
     df = pd.read_excel(hdx_response['result']['resources'][0]['download_url'], sheet_name=1)
     df['Month'] = df['Month'].map(month_map)
-    df['Quarter'] = df['Month'].map(quarter)
+    df['Quarter'] = df['Month'].map(quarter_map)
 
     context.log_event(
         ExpectationResult(
@@ -164,6 +126,8 @@ def gkg(context) -> pd.DataFrame:
                                                          partition_start + datetime.timedelta(days=1)))
 
     df = pd.concat(list(map(fetch_gkg, every_fifteen_timestamps)))
+    df = df.drop_duplicates(subset=['DocumentIdentifier'])
+    df = df.drop_duplicates(subset=['GKGRECORDID'])
 
     context.log_event(
         ExpectationResult(
@@ -178,7 +142,7 @@ def gkg(context) -> pd.DataFrame:
     yield Output(df, metadata={"num_rows": len(df)})
 
 # TODO make into op?
-def fetch_gsg(timestamp, tmp_dir='/tmp'):
+def fetch_gsg(timestamp, tmp_dir):
     pathlib.Path(tmp_dir).mkdir(parents=True, exist_ok=True)
     # timestamp is UTC "YYYYMMDDHHMMSS"
     gsg_filename = f"{timestamp}.gsg.docembed.json.gz"
@@ -220,6 +184,9 @@ def fetch_gsg(timestamp, tmp_dir='/tmp'):
 	io_manager_key="parquet_io_manager"
 )
 def gsg(context) -> pd.DataFrame:
+    # TODO make tmp_base configurable
+    tmp_base ='/tmp/foresight'
+    tmp_dir = f"{tmp_base}/{context.run.run_id}"
     partition_key = context.asset_partition_key_for_output()
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
@@ -227,7 +194,13 @@ def gsg(context) -> pd.DataFrame:
     every_fifteen_timestamps = list(every_n_mins_between(partition_start,
                                                          partition_start + datetime.timedelta(days=1)))
 
-    df = pd.concat(list(map(fetch_gsg, every_fifteen_timestamps)))
+    # `fetch_gsg` is not an op, so it doesn't have access to `context`.
+    # create a partial function that provides `tmp_dir`
+    # to `fetch_gsg` that we can still use with `map`
+    gsg_fetcher = functools.partial(fetch_gsg,
+                                    tmp_dir=tmp_dir)
+    df = pd.concat(list(map(gsg_fetcher, every_fifteen_timestamps)))
+    df = df.drop_duplicates(subset=['url'])
 
     context.log_event(
         ExpectationResult(
@@ -276,6 +249,13 @@ def gdelt(context, gkg, gsg) -> pd.DataFrame:
             },
         )
     )
+    try:
+        # TODO make tmp_base configurable
+        tmp_base ='/tmp/foresight'
+        tmp_dir = f"{tmp_base}/{context.run.run_id}"
+        shutil.rmtree(tmp_dir)
+    except OSError:
+        pass
     yield Output(df_all, metadata={"num_rows": len(df_all)})
 
 gdelt_job = define_asset_job(

@@ -1,11 +1,8 @@
 import json
-import math
 import gzip
 import shutil
-import calendar
 import datetime
 import pathlib
-import itertools
 import functools
 import urllib.request
 from zipfile import ZipFile
@@ -25,51 +22,14 @@ from dagster import ExpectationResult
 
 from dags import deployment_name
 from dags import resources
+from dags.utils import gdelt_files_between
+from dags.utils import json_decode_many
+from dags.utils import SerializableGenerator
+from dags.utils import month_map
+from dags.utils import quarter_map
 
-
-# map of month name to month number
-month_map = dict([(m, n) for n, m in enumerate(calendar.month_name[1:], 1)])
-
-# return quarter for given month number
-quarter = lambda m: math.ceil(float(m) / 3)
-
-def datetime_range(start, end, delta):
-    current = start
-    while current < end:
-        yield current
-        current += delta
-
-def every_n_mins_between(start, end, minutes=15):
-    return (dt.strftime('%Y%m%d%H%M%S') for dt in datetime_range(start, end, datetime.timedelta(minutes=minutes)))
-
-class SerializableGenerator(list):
-    """Generator that is serializable by JSON"""
-
-    def __init__(self, iterable):
-        tmp_body = iter(iterable)
-        try:
-            self._head = iter([next(tmp_body)])
-            self.append(tmp_body)
-        except StopIteration:
-            self._head = []
-
-    def __iter__(self):
-        return itertools.chain(self._head, *self[:1])
-
-def json_decode_many(s):
-    # https://stackoverflow.com/a/68942444
-    decoder = json.JSONDecoder()
-    _w = json.decoder.WHITESPACE.match
-    idx = 0
-    while True:
-        idx = _w(s, idx).end() # skip leading whitespace
-        if idx >= len(s):
-            break
-        obj, idx = decoder.raw_decode(s, idx=idx)
-        yield obj
 
 daily_partitions_def = DailyPartitionsDefinition(start_date="20200101010101", fmt='%Y%m%d%H%M%S')
-
 monthly_partitions_def = MonthlyPartitionsDefinition(start_date="202001", fmt='%Y%m')
 
 @asset(
@@ -86,7 +46,7 @@ def acled(context) -> pl.DataFrame:
     hdx_latest_resource_id = hdx_response['result']['resources'][0]['download_url'].split('/')[6]
     df = pl.read_excel(hdx_response['result']['resources'][0]['download_url'], sheet_name=1)
     df['Month'] = df['Month'].map(month_map)
-    df['Quarter'] = df['Month'].map(quarter)
+    df['Quarter'] = df['Month'].map(quarter_map)
 
     context.log_event(
         ExpectationResult(
@@ -116,35 +76,42 @@ def fetch_gkg(timestamp, tmp_dir):
     gkg_headers, gkg_meta = get_gkg_meta()
     # timestamp is UTC "YYYYMMDDHHMMSS"
     # TODO is this utf8 or cp1252?
-    try:
-        gkg_filename = f"{timestamp}.gkg.csv.zip"
-        gz_tmp = f"/{tmp_dir}/{gkg_filename}"
+    gkg_filename = f"{timestamp}.gkg.csv.zip"
+    gz_tmp = f"/{tmp_dir}/{gkg_filename}"
 
-        gkg_url = f"http://data.gdeltproject.org/gdeltv2/{timestamp}.gkg.csv.zip"
+    gkg_url = f"http://data.gdeltproject.org/gdeltv2/{gkg_filename}"
+    try:
         # get gdelt file
         if not pathlib.Path(gz_tmp).is_file():
             urllib.request.urlretrieve(gkg_url, gz_tmp)
         df = pl.read_csv(ZipFile(gz_tmp).read(f"{timestamp}.gkg.csv"),
                          sep='\t', encoding="utf8", ignore_errors=True, has_header=False)
                          
-    except (UnicodeEncodeError, FileNotFoundError, EOFError):
-        df = pl.DataFrame(np.zeros((2, 27)))
+    except (UnicodeEncodeError, FileNotFoundError, EOFError, urllib.error.HTTPError):
+        df = pl.DataFrame(np.zeros((2, 27))).select(pl.all().cast(str, strict=False))
 
     df.columns = gkg_headers
     df = df.with_column(pl.col("DATE").cast(str, strict=False).str.strptime(pl.Datetime, "%Y%m%d%H%M%S", strict=False).alias("DATE"))
     df = df.with_columns(pl.col("V2Locations").cast(str, strict=False).alias("V2Locations"))
+    df = df.with_columns(pl.col("GKGRECORDID").cast(str, strict=False).alias("GKGRECORDID"))
+    df = df.with_columns(pl.col("SourceCollectionIdentifier").cast(pl.Int64, strict=False).alias("SourceCollectionIdentifier"))
     df = df.with_column(pl.lit(timestamp).alias('gkg_file'))
 
+    # extract countries from V2Locations
+    # extract_all doesnt: https://github.com/pola-rs/polars/issues/4751
     df = df.with_columns(
              df.select(
                 pl.col("V2Locations").str.extract_all(r'1#\w+#(?P<country>\w{2})#').arr.eval(pl.element().str.extract(r'1#\w+#(?P<country>\w{2})#')).alias('countries')))
+    # find set of 10 first occurring countries
     df = df.with_columns(
             df.select(
                     pl.col("countries").arr.eval(pl.all().unique(maintain_order=True).head(10)).alias('top_countries')))
 
+    # first three get their own columns
     df = df.with_columns(df.select([pl.col('top_countries').arr.get(0).alias("country-1"),
                                     pl.col('top_countries').arr.get(1).alias("country-2"),
                                     pl.col('top_countries').arr.get(2).alias("country-3"),]))
+    # discard intermediary columns
     df.drop_in_place('top_countries')
     df.drop_in_place('countries')
 
@@ -164,17 +131,15 @@ def gkg(context) -> pl.DataFrame:
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
-    every_fifteen_timestamps = list(every_n_mins_between(partition_start,
-                                                         partition_start + datetime.timedelta(days=1)))
+    windows = gdelt_files_between(partition_start,
+                                  partition_start + datetime.timedelta(days=1))
 
     # `fetch_gsg` is not an op, so it doesn't have access to `context`.
     # create a partial function that provides `tmp_dir`
     # to `fetch_gsg` that we can still use with `map`
     gkg_fetcher = functools.partial(fetch_gkg,
                                     tmp_dir=tmp_dir)
-    df = pl.concat(list(map(gkg_fetcher, every_fifteen_timestamps)))
-    #df['DATE'] = df['DATE'].map(str).map(lambda x: pd.to_datetime(x, format='%Y%m%d%H%M%S', errors='coerce'))
-    #df = df.with_column(pl.col("DATE").cast(str).str.strptime(pl.Date, "%Y%m%d%H%M%S").alias("DATE"))
+    df = pl.concat(list(map(gkg_fetcher, windows)))
     df = df.drop_nulls(subset=["DATE"])
     df = df.unique(subset=["DocumentIdentifier"])
     df = df.unique(subset=["GKGRECORDID"])
@@ -201,17 +166,18 @@ def fetch_gsg(timestamp, tmp_dir):
     gz_tmp = f"{tmp_dir}/{gsg_filename}"
     json_tmp = f"{tmp_dir}/{timestamp}.gsg.docembed.json"
 
-    # get gdelt file
-    if not pathlib.Path(gz_tmp).is_file():
-        urllib.request.urlretrieve(gsg_url, gz_tmp)
-
     try:
+        # get gdelt file
+        if not pathlib.Path(gz_tmp).is_file():
+            urllib.request.urlretrieve(gsg_url, gz_tmp)
+
         # make json generator
         with gzip.GzipFile(fileobj=open(gz_tmp, 'rb')) as gzipfile:
             content_str = gzipfile.read().decode('utf-8')
             records = json_decode_many(content_str)
-    except EOFError:
-        records = dict()
+    except (EOFError, urllib.error.HTTPError):
+        records = [{'docembed': list(np.zeros(512)), 'date': '', 'url': '',
+                    'lang': '', 'title': '', 'model': ''},]
 
     # write decoded ndjson
     with open(json_tmp, 'w') as f:
@@ -242,15 +208,15 @@ def gsg(context) -> pl.DataFrame:
     partition_date_str = partition_key.split('|')[0]
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
-    every_fifteen_timestamps = list(every_n_mins_between(partition_start,
-                                                         partition_start + datetime.timedelta(days=1)))
+    windows = gdelt_files_between(partition_start,
+                                  partition_start + datetime.timedelta(days=1))
 
     # `fetch_gsg` is not an op, so it doesn't have access to `context`.
     # create a partial function that provides `tmp_dir`
     # to `fetch_gsg` that we can still use with `map`
     gsg_fetcher = functools.partial(fetch_gsg,
                                     tmp_dir=tmp_dir)
-    df = pl.concat(list(map(gsg_fetcher, every_fifteen_timestamps)))
+    df = pl.concat(list(map(gsg_fetcher, windows)))
     df = df.unique(subset=["url"])
 
     context.log_event(
