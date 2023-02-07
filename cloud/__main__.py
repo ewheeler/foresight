@@ -31,7 +31,7 @@ git clone https://github.com/ewheeler/foresight /home/frsght/foresight
 instance_addr = compute.address.Address("address")
 compute_instance = compute.Instance(
     "instance",
-    machine_type="n2-highmem-16",
+    machine_type="n2-highmem-8",
     metadata_startup_script=startup_script,
     boot_disk=compute.InstanceBootDiskArgs(
         initialize_params=compute.InstanceBootDiskInitializeParamsArgs(
