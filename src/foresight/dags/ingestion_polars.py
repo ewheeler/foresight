@@ -69,10 +69,11 @@ def get_gkg_meta() -> dict:
     # https://pandas.pydata.org/pandas-docs/stable/user_guide/gotchas.html#support-for-integer-na=
     gkg_meta = dict(zip(gkg_schema['tableId'],
                     gkg_schema['dataType'].str.replace('STRING', 'str').str.replace('INTEGER', 'Int64')))
+    #gkg_meta.update({'DATE': 'str'})
     return gkg_headers, gkg_meta
 
 # TODO make into op?
-def fetch_gkg(timestamp, tmp_dir):
+def fetch_gkg(timestamp, tmp_dir, keep_all_cols=False):
     gkg_headers, gkg_meta = get_gkg_meta()
     # timestamp is UTC "YYYYMMDDHHMMSS"
     # TODO is this utf8 or cp1252?
@@ -93,12 +94,24 @@ def fetch_gkg(timestamp, tmp_dir):
         df = pl.DataFrame(np.zeros((2, 27))).select(pl.all().cast(str, strict=False)).lazy()
 
     df = df.rename(dict(zip(df.columns, gkg_headers))).collect()
+    if not keep_all_cols:
+        # discard gdelt V1 columns and others that are
+        # unlikely to be useful
+        df = df.drop(['SourceCollectionIdentifier', 'Counts', 'Themes',
+                      'Locations', 'Persons', 'Organizations', 'GCAM',
+                      'SharingImage', 'RelatedImages', 'SocialImageEmbeds',
+                      'SocialVideoEmbeds', 'Quotations', 'AllNames', 'Amounts',
+                      'TranslationInfo','Extras', 'V2Tone', 'Dates', 'DATE'])
 
     df = df.lazy().with_columns([
-        pl.col("DATE").cast(str, strict=False).str.strptime(pl.Datetime, "%Y%m%d%H%M%S", strict=False).alias("DATE"),
+        # GDELT's int64 is not the typical 'seconds since epoch' that most
+        # systems expect when encountering integer timetamps, so
+        # cast as string and then parse to datetime.
+        # rename to avoid confusion with gsg's `date`
+        #pl.col("DATE").str.strptime(pl.Datetime, "%Y%m%d%H%M%S", strict=False).dt.cast_time_unit(tu="ms").alias("PUBDATE"),
+        #pl.col("DATE").str.strptime(pl.Datetime, "%Y%m%d%H%M%S", strict=False).alias("PUBDATE"),
         pl.col("V2Locations").cast(str, strict=False).alias("V2Locations"),
         pl.col("GKGRECORDID").cast(str, strict=False).alias("GKGRECORDID"),
-        pl.col("SourceCollectionIdentifier").cast(pl.Int64, strict=False).alias("SourceCollectionIdentifier"),
         pl.lit(timestamp).alias('gkg_file')]).collect()
 
     # extract countries from V2Locations
@@ -116,9 +129,7 @@ def fetch_gkg(timestamp, tmp_dir):
                                            pl.col('top_countries').arr.get(1).alias("country-2"),
                                            pl.col('top_countries').arr.get(2).alias("country-3"),])).collect()
     # discard intermediary columns
-    df.drop_in_place('top_countries')
-    df.drop_in_place('countries')
-
+    df = df.drop(['countries', 'top_countries'])
     return df
 
 @asset(
@@ -132,7 +143,7 @@ def gkg(context) -> pl.DataFrame:
     tmp_dir = f"{tmp_base}/{context.run.run_id}"
 
     partition_key = context.asset_partition_key_for_output()
-    partition_date_str = partition_key.split('|')[0]
+    partition_date_str = partition_key
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
     windows = gdelt_files_between(partition_start,
@@ -144,9 +155,11 @@ def gkg(context) -> pl.DataFrame:
     gkg_fetcher = functools.partial(fetch_gkg,
                                     tmp_dir=tmp_dir)
     df = pl.concat(list(map(gkg_fetcher, windows)))
-    df = df.drop_nulls(subset=["DATE"])
+    context.log.debug(df.shape)
+    #df = df.drop_nulls(subset=["PUBDATE"])
     df = df.unique(subset=["DocumentIdentifier"])
     df = df.unique(subset=["GKGRECORDID"])
+    context.log.debug(df.shape)
 
     context.log_event(
         ExpectationResult(
@@ -161,7 +174,7 @@ def gkg(context) -> pl.DataFrame:
     yield Output(df, metadata={"num_rows": len(df)})
 
 # TODO make into op?
-def fetch_gsg(timestamp, tmp_dir):
+def fetch_gsg(timestamp, tmp_dir, keep_all_cols=False):
     pathlib.Path(tmp_dir).mkdir(parents=True, exist_ok=True)
     # timestamp is UTC "YYYYMMDDHHMMSS"
     gsg_filename = f"{timestamp}.gsg.docembed.json.gz"
@@ -195,7 +208,12 @@ def fetch_gsg(timestamp, tmp_dir):
 
     # https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_ndjson.html
     df = pl.scan_ndjson(json_tmp)
-    df = df.with_column(pl.lit(timestamp).alias('gsg_file'))
+    if not keep_all_cols:
+        # drop column that is unlikely to be useful
+        df = df.drop(['model'])
+    df = df.with_columns([
+                pl.lit(timestamp).alias('gsg_file'),
+                pl.col("date").str.strptime(pl.Datetime, "%Y-%m-%dT%H:%M:%SZ", strict=False).dt.cast_time_unit(tu="ms").alias("date")])
     return df
 
 @asset(
@@ -209,7 +227,7 @@ def gsg(context) -> pl.DataFrame:
     tmp_dir = f"{tmp_base}/{context.run.run_id}"
 
     partition_key = context.asset_partition_key_for_output()
-    partition_date_str = partition_key.split('|')[0]
+    partition_date_str = partition_key
     partition_start = datetime.datetime.strptime(partition_date_str, '%Y%m%d%H%M%S')
 
     windows = gdelt_files_between(partition_start,
@@ -252,9 +270,9 @@ def gsg(context) -> pl.DataFrame:
 def gdelt(context, gkg, gsg) -> pl.DataFrame:
     df = gkg.join(gsg, left_on='DocumentIdentifier', right_on='url')
 
-    df = df.with_column(pl.col('DATE').dt.year().cast(pl.Int16, strict=False).alias('year'))
-    df = df.with_column(pl.col('DATE').dt.month().cast(str, strict=False).alias('month'))
-    df = df.with_column(pl.col('DATE').dt.strftime('%Y%m').alias('yearmonth'))
+    df = df.with_column(pl.col('date').dt.strftime('%Y').alias('year'))
+    df = df.with_column(pl.col('date').dt.strftime('%m').alias('month'))
+    df = df.with_column(pl.col('date').dt.strftime('%Y%m').alias('yearmonth'))
 
     context.log_event(
         ExpectationResult(
