@@ -20,12 +20,12 @@ def get_gdelt_gkg_file_list():
     df['ts'] = pd.to_datetime(df['ts'])
     return df
 
-def gdelt_files_between(start, end, p=.2):
+def gdelt_files_between(start, end, p=.15):
     df = get_gdelt_gkg_file_list()
     files = df.loc[df['ts'].between(start, end, inclusive=False)]['ts'].dt.strftime('%Y%m%d%H%M%S') 
     return files.sample(frac=p)
 
-def sample_between(start, end, p=.2, minutes=15):
+def sample_between(start, end, p=.15, minutes=15):
     windows = list(dt.strftime('%Y%m%d%H%M%S') for dt in datetime_range(start, end, datetime.timedelta(minutes=minutes)))
     return random.sample(windows, int(len(windows)*p))
 
