@@ -27,6 +27,7 @@ darts = { version = "^0.23.1", markers = "platform_machine == 'x86_64'" }
 paramiko = "^3.0.0"
 bokeh = "^2.4.0"
 polars = "^0.16.2"
+lxml = "*"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "*"
