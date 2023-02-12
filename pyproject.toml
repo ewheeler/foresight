@@ -28,6 +28,7 @@ paramiko = "^3.0.0"
 bokeh = "^2.4.0"
 polars = "^0.16.2"
 lxml = "*"
+tensorflow = "*"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "*"
