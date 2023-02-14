@@ -101,6 +101,11 @@ def load_training_sample(country, daterange):
 
 
 def create_labeled_sample(target_year, target_month, country, lookback, y_var, dataframe = None):
+    """
+    produces labeled training sample
+    if dataframe provided, selects sample from frame
+    otherwise, loads from GCP
+    """
     daterange = get_daterange(target_month, target_year, lookback)
     y = ACLED[
           (ACLED['Year'] == target_year)
