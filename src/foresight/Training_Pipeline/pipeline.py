@@ -2,6 +2,7 @@ import os
 from google.cloud import storage
 import numpy as np
 import pandas as pd
+import datetime
 
 import dask.dataframe
 import dask.array
@@ -47,8 +48,32 @@ ACLED['Code'] = ACLED['Country'].map(codes)
 
 embedding_cols = [f'docembed-{i}' for i in range(512)]
 
+
+def get_daterange(start_month, year, n_months):
+    month_years = []
+    month = start_month
+
+    for i in range(n_months):
+        if month <= 1:
+            month = 12
+            year = year - 1
+        else:
+            month = month - 1
+
+        month_years.append((year, month))
+
+    start_date = month_years[0]
+    end_date = month_years[-1]
+
+    date_range = (
+        datetime.datetime(start_date[0], start_date[1], 1)
+        , datetime.datetime(end_date[0], end_date[1], 1)
+    )
+
+    return date_range
+
 @dask.delayed
-def select_training_sample(dataframe, country, year, month):
+def select_training_sample(dataframe, country, daterange):
     """
     Selects a training sample from a GDELT dataframe
     """
@@ -56,18 +81,38 @@ def select_training_sample(dataframe, country, year, month):
         ((dataframe['country-1'] == country)
            | (dataframe['country-2'] == country)
            | (dataframe['country-3'] == country))
-        & (dataframe['month'] == month)
-        & (dataframe['year'] == year)][embedding_cols]
+        & (dataframe['DATE'] >= daterange[0])
+        & (dataframe['DATE'] <= daterange[1])][embedding_cols]
 
     return embeddings
 
 
 
 @dask.delayed
-def load_training_sample(country, year, month):
+def load_training_sample(country, daterange):
     """
     Loads a training sample from GCP
     """
-    filters = [('country-1' , '=', country),('year', '=', year), ('month', '=', month)]
+    start_date = daterange[0]
+    end_date = daterange[1]
+    filters = [('country-1' , '=', country),('DATE', '>=', start_date), ('DATE', '<=', end_date)]
     sample = dask.dataframe.read_parquet('gcs://frsght/datasets/gdelt', columns = embedding_cols, filters = filters)
     return sample
+
+
+def create_labeled_sample(target_year, target_month, country, lookback, y_var, dataframe = None):
+    daterange = get_daterange(target_month, target_year, lookback)
+    y = ACLED[
+          (ACLED['Year'] == target_year)
+        & (ACLED['Month_Num'] == target_month)
+        & (ACLED['Code'] == country)][y_var].values[0]
+
+    if dataframe == None:
+        X = load_training_sample(country, daterange)
+    else:
+        X = select_training_sample(dataframe,country, daterange)
+
+    return X, y
+
+
+
