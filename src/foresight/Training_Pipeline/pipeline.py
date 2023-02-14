@@ -24,8 +24,23 @@ ACLED = pd.read_csv(os.path.normpath(os.environ['ACLED_Labels']))
 codes = pd.read_html('https://www.worlddata.info/countrycodes.php')[0]
 
 codes = dict(zip(codes['Country'], codes['Fips 10']))
+codes.update({
+     'Bailiwick of Guernsey' : 'GK'
+    ,'Bailiwick of Jersey' :'GE'
+    ,'Czech Republic':'EZ'
+    ,'Democratic Republic of Congo': 'CG'
+    ,'eSwatini' :'WZ'
+    ,'Micronesia':'FM'
+    ,'Monaco':'MN'
+    ,'Pitcairn':'PC'
+    ,'Republic of Congo':'CF'
+    ,'Saint-Barthelemy':'TB'
+    ,'Saint-Martin':'RN'
+    ,'South Georgia and the South Sandwich Islands': 'SX'
+    ,'South Sudan':'OD'
+    ,'United States': 'US'
+})
 
-#TODO fix FIPS code parsing for missing counties
 ACLED['Code'] = ACLED['Country'].map(codes)
 
 #GDELT = dask.dataframe.read_parquet('gcs://frsght/datasets/gdelt')
@@ -56,4 +71,3 @@ def load_training_sample(country, year, month):
     filters = [('country-1' , '=', country),('year', '=', year), ('month', '=', month)]
     sample = dask.dataframe.read_parquet('gcs://frsght/datasets/gdelt', columns = embedding_cols, filters = filters)
     return sample
-
