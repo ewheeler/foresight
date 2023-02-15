@@ -55,12 +55,18 @@ class PolarsParquetIOManager(UPathIOManager):
                          min_rows_per_group=20000,
                          file_visitor=file_visitor)
 
-        # Write the ``_common_metadata`` parquet file without row groups statistics
-        pq.write_metadata(table.schema, dataset_part_path / '_common_metadata')
+        try:
+            # Write the ``_common_metadata`` parquet file without row groups statistics
+            pq.write_metadata(table.schema, dataset_part_path / '_common_metadata')
+        except FileNotFoundError:
+            pass
 
-        # Write the ``_metadata`` parquet file with row groups statistics of all files
-        pq.write_metadata(table.schema, dataset_part_path / '_metadata',
-                          metadata_collector=written_metadata)
+        try:
+            # Write the ``_metadata`` parquet file with row groups statistics of all files
+            pq.write_metadata(table.schema, dataset_part_path / '_metadata',
+                              metadata_collector=written_metadata)
+        except FileNotFoundError:
+            pass
         asset_obs_kwargs = {"num_rows": len(obj),
                             "size (bytes)": sum(written_sizes)}
         context.add_output_metadata(asset_obs_kwargs)
