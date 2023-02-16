@@ -44,7 +44,7 @@ codes.update({
 
 ACLED['Code'] = ACLED['Country'].map(codes)
 
-#GDELT = dask.dataframe.read_parquet('gcs://frsght/datasets/gdelt')
+#GDELT = dask.dataframe.read_parquet('gcs://frsght/datasets_sample_b988c8_694a90_1f5902/gdelt')
 
 embedding_cols = [f'docembed-{i}' for i in range(512)]
 
@@ -96,7 +96,7 @@ def load_training_sample(country, daterange):
     start_date = daterange[0]
     end_date = daterange[1]
     filters = [('country-1' , '=', country),('DATE', '>=', start_date), ('DATE', '<=', end_date)]
-    sample = dask.dataframe.read_parquet('gcs://frsght/datasets/gdelt', columns = embedding_cols, filters = filters)
+    sample = dask.dataframe.read_parquet('gcs://frsght/datasets_sample_b988c8_694a90_1f5902/gdelt', columns = embedding_cols, filters = filters)
     return sample
 
 
