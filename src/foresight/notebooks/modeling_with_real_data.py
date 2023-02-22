@@ -92,11 +92,10 @@ axs[1].set_title('Events')
 """Model without embeddings (only based on previous fatalities/events)."""
 
 # Fatalities
-model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
+model = NBEATSModel(input_chunk_length=3, output_chunk_length=1, random_state=42)
 model.fit([fatalities_train, events_train], epochs=100, verbose=True);
 pred_fatalities = model.predict(series=fatalities_train, n=6)
 pred_events = model.predict(series=events_train, n=6)
-
 _, pred_fatalities, pred_events = scaler.inverse_transform([embeddings_scaled, pred_fatalities, pred_events])
 
 fig, axs = plt.subplots(1, 2, figsize=(16, 6))
@@ -109,13 +108,10 @@ axs[1].set_title('Events')
 
 """Model with embeddings."""
 
-len(events_train)
-
-emb_model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
+emb_model = NBEATSModel(input_chunk_length=3, output_chunk_length=1, random_state=42)
 emb_model.fit([fatalities_train, events_train], epochs=100, past_covariates=[embeddings_scaled, embeddings_scaled], verbose=True)
 emb_pred_fatalities = emb_model.predict(series=fatalities_train, past_covariates=embeddings_scaled, n=6)
 emb_pred_events = emb_model.predict(series=fatalities_train, past_covariates=embeddings_scaled, n=6)
-
 _, emb_pred_fatalities, emb_pred_events = scaler.inverse_transform([embeddings_scaled, emb_pred_fatalities, emb_pred_events])
 
 fig, axs = plt.subplots(1, 2, figsize=(16, 6))
@@ -123,6 +119,6 @@ fatalities.plot(ax=axs[0], label='actual')
 emb_pred_fatalities.plot(ax=axs[0], label='predicted')
 axs[0].set_title('Fatalities')
 events.plot(ax=axs[1], label='actual')
-pred_events.plot(ax=axs[1], label='predicted')
+emb_pred_events.plot(ax=axs[1], label='predicted')
 axs[1].set_title('Events')
 
