@@ -5,6 +5,7 @@ import pandas as pd
 import datetime
 import numpy as np
 
+import tensorflow as tf
 import sys
 
 pd.options.display.expand_frame_repr = False
@@ -91,7 +92,7 @@ def read_in_country_data(yearmonths, country,  verbose = 0):
     prog = 0
     if len(files) > 0:
         for file in files:
-            df = pd.concat([df, pd.read_parquet(file)])
+            df = pd.concat([df, pd.read_csv(file)])
             if verbose == 1:
                 fprog = fprog + 1
                 prog_bar(fprog, len(files))
@@ -143,43 +144,17 @@ def parse_yearmonths(start, n_months):
 
     return yearmonths
 
-
-
+def build_example(target_country, target_yearmonth, lag, n_months, n_articles, label_col):
+    yearmonths = parse_yearmonths(target_yearmonth, lag+n_months)[lag:-1]
+    df = read_in_country_data(yearmonths, target_country)
+    embeddings = parse_gdelt_data(df, n_articles)
+    label = get_label(target_yearmonth, target_country, label_col)
+    for emb in embeddings:
+    return [{'embeddings': embedding,
+            'label':label
+            } for embedding in embeddings]
 
 
 def build_example_dict(country, target_yearmonth):
     pass
-
-
-###Main loop###
-##for ym in yearmonths[0:1]:
-##    if ym not in completed_months:
-##        files = [b for b in blobs if ym in b]
-##        if len(files) > 0:
-##            df = pd.DataFrame()
-##            print('\nYearMonth:', ym)
-##            print('Loading Data')
-##            fprog = 0
-##            for file in files:
-##                df = pd.concat([df, pd.read_parquet(file)])
-##                fprog = fprog + 1
-##                prog_bar(fprog, len(files))
-##            countries = pd.concat([df['country-1'], df['country-2'], df['country-3']]).unique()
-##            countries = countries[countries != None]
-##            cprog = 0
-##            print('\nWriting Data:')
-##            for country in countries:
-##                country_df = df[
-##                    (df['country-1'] == country) | (df['country-2'] == country) | (df['country-3'] == country)]
-##                count = len(country_df)
-##                filename = f'{ym}_{country}.csv'
-##                metadata.loc[len(metadata.index)] = [filename, ym, country, count]
-##                country_df.to_csv(f'{stacked_dir}/{filename}', index = False)
-##                cprog = cprog + 1
-##                prog_bar(cprog, len(countries))
-##            metadata.to_csv(metadata_path, index = False)
-##        else:
-##            print('No files found for', ym)
-##
-##if __name__ == "__main__":
 
