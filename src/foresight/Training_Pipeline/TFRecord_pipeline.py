@@ -106,6 +106,8 @@ def read_in_month(yearmonth, verbose = 1):
 
 def read_in_country_data(yearmonths, country,  verbose = 0):
     files = [b for b in blobs if any(ym in b for ym in yearmonths) and country in b]
+    if len(files) == 0:
+        raise Exception(f'No Data for given country/dates')
     df = pd.DataFrame()
     prog = 0
     if len(files) > 0:
