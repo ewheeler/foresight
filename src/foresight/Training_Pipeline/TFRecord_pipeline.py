@@ -15,12 +15,13 @@ pd.options.display.max_rows = 100
 
 n_article = 50 #number of articles per sample
 y_var = 'Trend_Increasing' #Column in ACLED to use as y
+y_var_feature_type = 'int' #kind of feature to use for y. Should be int or float
 n_months = 1 # number of months to sample for features
 lag_time = 2 # months between last feature month and label month
 
 #gdelt_dir = 'datasets_sample_b988c8_694a90_1f5902/gdelt' #WHERE TO GET FEATURES
 gdelt_dir = 'datasets_stacked/gdelt'
-tfrecord_dir = 'gcs://frsght/datasets_stacked/tfrecords_1' #WHERE TO SAVE OUTPUT
+tfrecord_dir = 'gs://frsght/datasets_stacked/tfrecords_1' #WHERE TO SAVE OUTPUT
 
 ###Setting up Bucket####
 GCP_project = 'foresight-375620'
@@ -144,7 +145,7 @@ def parse_yearmonths(start, n_months):
 
     return yearmonths
 
-def build_example(target_country, target_yearmonth, lag, n_months, n_articles, label_col):
+def build_example(target_country, target_yearmonth, lag, n_months, n_articles, label_col, y_type = 'int'):
     yearmonths = parse_yearmonths(target_yearmonth, lag+n_months)[lag:-1]
     df = read_in_country_data(yearmonths, target_country)
     embeddings = parse_gdelt_data(df, n_articles)
@@ -160,7 +161,10 @@ def build_example(target_country, target_yearmonth, lag, n_months, n_articles, l
         emb_feature = tf.train.Feature(bytes_list=tf.train.BytesList(value=[emb_bytes]))
         dim_feature_1 = tf.train.Feature(int64_list=tf.train.Int64List(value=[emb_shape[0]]))
         dim_feature_2 = tf.train.Feature(int64_list=tf.train.Int64List(value=[emb_shape[1]]))
-        label_feature = tf.train.Feature(int64_list=tf.train.Int64List(value=[int(label)]))
+        if y_type = 'int':
+            label_feature = tf.train.Feature(int64_list=tf.train.Int64List(value=[int(label)]))
+        elif y_type = 'float':
+            label_feature = tf.train.Feature(int64_list=tf.train.FloatList(value=[int(label)]))
 
         feature_map = {'embeddings': emb_feature
                       ,'height'       : dim_feature_1
