@@ -177,3 +177,27 @@ def build_example(target_country, target_yearmonth, lag, n_months, n_articles, l
 
     return examples
 
+def create_records(n_article = n_article, n_months = n_months, lag_time = lag_time, y_var = y_var, y_type = y_var_feature_type, verbose = 1):
+    shard = []
+    file_count = 0
+    filename = f'record_{str(file_count).rjust(3)}.record'
+    if verbose == 1:
+        prog = 0
+        prog_bar(prog, len(yearmonths))
+    for ym in yearmonths:
+        for country in countries:
+            example = build_example(country, ym, lag_time, n_months, n_article, y_var, y_type = y_type)
+            shard.extend(example)
+            if sys.getsizeof(shard) > 120000000:
+                with tf.io.TFRecordWriter(f'{tfrecord_dir}/{filename}') as writer:
+                    for example in shard:
+                        writer.write(example.SerializeToString())
+                file_count = file_count + 1
+                filename = f'record_{str(file_count).rjust(3)}.record'
+                shard = []
+    if verbose == 1
+        prog = prog + 1
+        prog_bar(prog, len(yearmonths))
+
+
+
