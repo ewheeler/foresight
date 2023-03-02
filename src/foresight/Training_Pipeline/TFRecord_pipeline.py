@@ -67,6 +67,23 @@ yearmonths = [f'{y}{m}' for y in ['2020', '2021', '2022', '2023'] for m in
 
 embedding_cols = [f'docembed-{i}' for i in range(512)]
 
+countries = set([b[-6:-4].strip() for b in blobs])
+
+
+#LOGS
+
+error_logs = []
+
+readme = """
+
+
+
+
+"""
+
+
+
+
 def prog_bar(prog, total):
     pct = 100 * (prog / total)
     bar = '=' * int(pct) + '-' * (100 - int(pct))
@@ -186,8 +203,11 @@ def create_records(n_article = n_article, n_months = n_months, lag_time = lag_ti
         prog_bar(prog, len(yearmonths))
     for ym in yearmonths:
         for country in countries:
-            example = build_example(country, ym, lag_time, n_months, n_article, y_var, y_type = y_type)
-            shard.extend(example)
+            try:
+                example = build_example(country, ym, lag_time, n_months, n_article, y_var, y_type = y_type)
+                shard.extend(example)
+            except:
+                error_logs.append(f'Error on {ym}_{country}')
             if sys.getsizeof(shard) > 120000000:
                 with tf.io.TFRecordWriter(f'{tfrecord_dir}/{filename}') as writer:
                     for example in shard:
