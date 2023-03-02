@@ -161,9 +161,9 @@ def build_example(target_country, target_yearmonth, lag, n_months, n_articles, l
         emb_feature = tf.train.Feature(bytes_list=tf.train.BytesList(value=[emb_bytes]))
         dim_feature_1 = tf.train.Feature(int64_list=tf.train.Int64List(value=[emb_shape[0]]))
         dim_feature_2 = tf.train.Feature(int64_list=tf.train.Int64List(value=[emb_shape[1]]))
-        if y_type = 'int':
+        if y_type == 'int':
             label_feature = tf.train.Feature(int64_list=tf.train.Int64List(value=[int(label)]))
-        elif y_type = 'float':
+        elif y_type == 'float':
             label_feature = tf.train.Feature(int64_list=tf.train.FloatList(value=[int(label)]))
 
         feature_map = {'embeddings': emb_feature
@@ -195,7 +195,7 @@ def create_records(n_article = n_article, n_months = n_months, lag_time = lag_ti
                 file_count = file_count + 1
                 filename = f'record_{str(file_count).rjust(3)}.record'
                 shard = []
-    if verbose == 1
+    if verbose == 1:
         prog = prog + 1
         prog_bar(prog, len(yearmonths))
 
