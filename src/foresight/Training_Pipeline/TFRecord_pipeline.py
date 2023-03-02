@@ -149,12 +149,27 @@ def build_example(target_country, target_yearmonth, lag, n_months, n_articles, l
     df = read_in_country_data(yearmonths, target_country)
     embeddings = parse_gdelt_data(df, n_articles)
     label = get_label(target_yearmonth, target_country, label_col)
+
+
+    examples = []
+
     for emb in embeddings:
-    return [{'embeddings': embedding,
-            'label':label
-            } for embedding in embeddings]
+        emb_shape = emb.shape
+        emb_bytes = emb.tobytes()
 
+        emb_feature = tf.train.Feature(bytes_list=tf.train.BytesList(value=[emb_bytes]))
+        dim_feature_1 = tf.train.Feature(int64_list=tf.train.Int64List(value=[emb_shape[0]]))
+        dim_feature_2 = tf.train.Feature(int64_list=tf.train.Int64List(value=[emb_shape[1]]))
+        label_feature = tf.train.Feature(int64_list=tf.train.Int64List(value=[int(label)]))
 
-def build_example_dict(country, target_yearmonth):
-    pass
+        feature_map = {'embeddings': emb_feature
+                      ,'height'       : dim_feature_1
+                      ,'width'        : dim_feature_2
+                      ,'label'        : label_feature
+                     }
+
+        example = tf.train.Example(features=tf.train.Features(feature=feature_map))
+        examples.append(example)
+
+    return examples
 
