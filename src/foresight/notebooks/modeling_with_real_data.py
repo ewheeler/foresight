@@ -9,9 +9,9 @@ Original file is located at
 This notebook uses `darts` python framework for timeseries models on mean embeddings.
 """
 
-# !pip install darts
-
 !curl ipinfo.io
+
+# !pip install darts
 
 # Commented out IPython magic to ensure Python compatibility.
 # %matplotlib inline
@@ -25,44 +25,39 @@ from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.models import NBEATSModel
 
-gcp_project = 'foresight-375620'
-gcp_bucket = 'frsght'
+# gcp_project = 'foresight-375620'
+# gcp_bucket = 'frsght'
 
-import google.auth
-from google.colab import auth
+# import google.auth
+# from google.colab import auth
 
-# authenticate with gcp
-auth.authenticate_user()
-credentials, project_id = google.auth.default()
+# # authenticate with gcp
+# auth.authenticate_user()
+# credentials, project_id = google.auth.default()
 
-!gcloud config set project $gcp_project
-!echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" > /etc/apt/sources.list.d/gcsfuse.list
-!curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-!apt -qq update
-!apt -qq install gcsfuse
+# !gcloud config set project $gcp_project
+# !echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" > /etc/apt/sources.list.d/gcsfuse.list
+# !curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+# !apt -qq update
+# !apt -qq install gcsfuse=0.41.12
 
-# create colab instance directory
-!mkdir -p $gcp_bucket
-# mount gcp bucket to colab instance directory.
-# at /content/gcp_bucket
-!gcsfuse  --implicit-dirs --limit-bytes-per-sec -1 --limit-ops-per-sec -1 $gcp_bucket $gcp_bucket
-!gcsfuse  --implicit-dirs  --stat-cache-ttl 12h --type-cache-ttl 12h --stat-cache-capacity 65536 --limit-bytes-per-sec -1 --limit-ops-per-sec -1 $gcp_bucket $gcp_bucket
+# # create colab instance directory
+# !mkdir -p $gcp_bucket
+# # mount gcp bucket to colab instance directory.
+# # at /content/gcp_bucket
+# !gcsfuse  --implicit-dirs --limit-bytes-per-sec -1 --limit-ops-per-sec -1 $gcp_bucket $gcp_bucket
+# !gcsfuse  --implicit-dirs  --stat-cache-ttl 12h --type-cache-ttl 12h --stat-cache-capacity 65536 --limit-bytes-per-sec -1 --limit-ops-per-sec -1 $gcp_bucket $gcp_bucket
 
-!pip install gcsfs
+# !pip install gcsfs
 
 """The rest is run on a single country (AA)."""
 
-df = pd.read_csv("/content/frsght/monthly_emb_means_w_acled_csv/AA_monthly_embedding_means.csv")
+df = pd.read_csv("/content/frsght/monthly_emb_means_w_acled_csv_exp/AF_monthly_embedding_means.csv")
 len(df)
 
 df
 
-def convert_emb_str_to_floats(row):
-    return row['docembed_mean'].lstrip("'[").rstrip("]'").split()
-
-emb_cols = [f'docembed_mean-{i}' for i in range(1, 513)]
-df[emb_cols] = df['docembed_mean'].str.lstrip("'[").str.rstrip("]'").str.split(expand=True)
-df.head()
+emb_cols = [col for col in df.columns if col.startswith('docembed')]
 
 series = TimeSeries.from_dataframe(
     df, time_col='window',
