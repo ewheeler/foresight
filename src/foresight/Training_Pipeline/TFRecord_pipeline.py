@@ -1,5 +1,6 @@
 import os
 from google.cloud import storage
+import io
 import numpy as np
 import pandas as pd
 import datetime
@@ -21,7 +22,10 @@ lag_time = 2 # months between last feature month and label month
 
 #gdelt_dir = 'datasets_sample_b988c8_694a90_1f5902/gdelt' #WHERE TO GET FEATURES
 gdelt_dir = 'datasets_stacked/gdelt'
-tfrecord_dir = 'gs://frsght/datasets_stacked/tfrecords_1' #WHERE TO SAVE OUTPUT
+save_dir = 'gs://frsght/datasets_stacked/tfrecords_1' #WHERE TO SAVE OUTPUT
+tfrecord_dir = f'{save_dir}/data'
+
+
 
 ###Setting up Bucket####
 GCP_project = 'foresight-375620'
@@ -74,11 +78,17 @@ countries = set([b[-6:-4].strip() for b in blobs])
 
 error_logs = []
 
-readme = """
+readme = f"""
+Welcome!
+This readme contains information on the data contained in this tfrecord dataset
 
+Number of Articles Per Sample: {n_article}
+ACLED Label: {y_var}
+ACLED Label Type: {y_var_feature_type} 
+Number of Months in Each Sample: {n_months}
+Lag Time Between Embeddings and Label: {lag_time} months
 
-
-
+See Error Logs for issues encountered while generating this dataset
 """
 
 
@@ -221,5 +231,15 @@ def create_records(n_article = n_article, n_months = n_months, lag_time = lag_ti
         prog = prog + 1
         prog_bar(prog, len(yearmonths))
 
+def write_logs():
+    log_path = f'{save_dir}/error_log.txt'
+    readme_path = f'{save_dir}/readme.txt'
+    log = "\n".join(error_logs)
+
+
+    if len(error_logs)> 0:
+        bucket.blob(log_path).upload_from_string(log)
+
+    bucket.blob(readme_path).upload_from_string(readme)
 
 
