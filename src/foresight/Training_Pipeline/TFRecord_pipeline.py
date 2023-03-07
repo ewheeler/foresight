@@ -227,9 +227,14 @@ def create_records(n_article = n_article, n_months = n_months, lag_time = lag_ti
                 file_count = file_count + 1
                 filename = f'record_{str(file_count).rjust(3)}.record'
                 shard = []
-    if verbose == 1:
-        prog = prog + 1
-        prog_bar(prog, len(yearmonths))
+        if verbose == 1:
+          prog = prog + 1
+          prog_bar(prog, len(yearmonths))
+    if not shard == []:
+        with tf.io.TFRecordWriter(f'{tfrecord_dir}/{filename}') as writer:
+            for example in shard:
+                writer.write(example.SerializeToString())
+
 
 def write_logs():
     log_path = f'{save_dir}/error_log.txt'
