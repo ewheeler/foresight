@@ -11,30 +11,19 @@ This notebook uses `darts` python framework for timeseries models on mean embedd
 
 !curl ipinfo.io
 
+gcp_project = 'foresight-375620'
+gcp_bucket = 'frsght'
+
+import google.auth
+from google.colab import auth
+
+# authenticate with gcp
+auth.authenticate_user()
+credentials, project_id = google.auth.default()
+
+
+
 # !pip install darts
-
-# Commented out IPython magic to ensure Python compatibility.
-# %matplotlib inline
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import random
-
-from darts import TimeSeries
-from darts.dataprocessing.transformers import Scaler
-from darts.models import NBEATSModel
-
-# gcp_project = 'foresight-375620'
-# gcp_bucket = 'frsght'
-
-# import google.auth
-# from google.colab import auth
-
-# # authenticate with gcp
-# auth.authenticate_user()
-# credentials, project_id = google.auth.default()
-
 # !gcloud config set project $gcp_project
 # !echo "deb http://packages.cloud.google.com/apt gcsfuse-bionic main" > /etc/apt/sources.list.d/gcsfuse.list
 # !curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -49,71 +38,121 @@ from darts.models import NBEATSModel
 # !gcsfuse  --implicit-dirs  --stat-cache-ttl 12h --type-cache-ttl 12h --stat-cache-capacity 65536 --limit-bytes-per-sec -1 --limit-ops-per-sec -1 $gcp_bucket $gcp_bucket
 
 # !pip install gcsfs
+# !python -m pip install dask distributed --upgrade
 
-"""The rest is run on a single country (AA)."""
+# lag between embedding and prediction
+MONTHS_SHIFT = 1
 
-df = pd.read_csv("/content/frsght/monthly_emb_means_w_acled_csv_exp/AF_monthly_embedding_means.csv")
+# Commented out IPython magic to ensure Python compatibility.
+# %matplotlib inline
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+import dask.dataframe as dd
+
+from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler, StaticCovariatesTransformer
+from darts.models import NBEATSModel
+from darts.metrics import mae
+
+df = dd.read_csv("/content/frsght/monthly_emb_means_w_acled_csv_exp/*.csv")
+df = df.compute()
 len(df)
+# 6696
 
-df
+# do not keep countries with too few records
+countries = [country for country in df['fips'].unique() 
+             if len(df[df['fips'] == country]) > 30]
+len(countries)
+
+df = df[df['fips'].isin(countries)]
+len(df)
 
 emb_cols = [col for col in df.columns if col.startswith('docembed')]
 
-series = TimeSeries.from_dataframe(
-    df, time_col='window',
-    value_cols=['Events', 'Fatalities']+emb_cols)
-# plotting sometimes doesn't work in colab if running in the same runtime as
-# darts installation. To fix restart runtime and start from imports (skip install)
-series['Events'].plot()
-series['Fatalities'].plot()
+df.head()
 
-scaler = Scaler()
-embeddings = series[emb_cols]
-fatalities = series['Fatalities']
-events = series['Events']
-embeddings_scaled, fatalities_scaled, events_scaled = scaler.fit_transform([embeddings, fatalities, events])
-embeddings_train, embeddings_val = embeddings_scaled.split_before(.85)
-fatalities_train, fatalities_val = fatalities_scaled.split_before(.85)
-events_train, events_val = events_scaled.split_before(.85)
+def make_day(row):
+    return row['window'] + '-01'
 
-fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-fatalities_train.plot(ax=axs[0], label='train')
-fatalities_val.plot(ax=axs[0], label='val')
-axs[0].set_title('Fatalities')
-events_train.plot(ax=axs[1], label='train')
-events_val.plot(ax=axs[1], label='val')
-axs[1].set_title('Events')
+df['window_day'] = df.apply(make_day, axis=1)
 
-"""Model without embeddings (only based on previous fatalities/events)."""
+df['any_fatalities'] = df['Fatalities'] > 0
 
-# Fatalities
-model = NBEATSModel(input_chunk_length=3, output_chunk_length=1, random_state=42)
-model.fit([fatalities_train, events_train], epochs=100, verbose=True);
-pred_fatalities = model.predict(series=fatalities_train, n=6)
-pred_events = model.predict(series=events_train, n=6)
-_, pred_fatalities, pred_events = scaler.inverse_transform([embeddings_scaled, pred_fatalities, pred_events])
+print(f'From {len(df)} rows {sum(df["any_fatalities"])} have any fatalities')
+# From 6328 rows 2589 have any fatalities
 
-fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-fatalities.plot(ax=axs[0], label='actual')
-pred_fatalities.plot(ax=axs[0], label='predicted')
-axs[0].set_title('Fatalities')
-events.plot(ax=axs[1], label='actual')
-pred_events.plot(ax=axs[1], label='predicted')
-axs[1].set_title('Events')
+df.head()
 
-"""Model with embeddings."""
+all_series = TimeSeries.from_group_dataframe(df, time_col='window_day',
+        value_cols=['any_fatalities']+emb_cols,
+        group_cols=['fips'], fillna_value=0, fill_missing_dates=True, freq='MS')
 
-emb_model = NBEATSModel(input_chunk_length=3, output_chunk_length=1, random_state=42)
-emb_model.fit([fatalities_train, events_train], epochs=100, past_covariates=[embeddings_scaled, embeddings_scaled], verbose=True)
-emb_pred_fatalities = emb_model.predict(series=fatalities_train, past_covariates=embeddings_scaled, n=6)
-emb_pred_events = emb_model.predict(series=fatalities_train, past_covariates=embeddings_scaled, n=6)
-_, emb_pred_fatalities, emb_pred_events = scaler.inverse_transform([embeddings_scaled, emb_pred_fatalities, emb_pred_events])
+all_series = [series.shift(MONTHS_SHIFT) for series in all_series]
 
-fig, axs = plt.subplots(1, 2, figsize=(16, 6))
-fatalities.plot(ax=axs[0], label='actual')
-emb_pred_fatalities.plot(ax=axs[0], label='predicted')
-axs[0].set_title('Fatalities')
-events.plot(ax=axs[1], label='actual')
-emb_pred_events.plot(ax=axs[1], label='predicted')
-axs[1].set_title('Events')
+embeddings = [series[emb_cols] for series in all_series]
+any_fatalities = [series['any_fatalities'] for series in all_series]
+# scaler = Scaler()
+scaler = StaticCovariatesTransformer()
+embeddings_scaled = scaler.fit_transform(embeddings)
+fatalities_scaled = scaler.fit_transform(any_fatalities)
+
+
+
+emb_train_val_pairs = [emb.split_before(len(emb) - 6) for emb in embeddings_scaled]
+fatalities_train_val_pairs = [fatal.split_before(len(fatal) - 6) for fatal in fatalities_scaled]
+
+emb_train, emb_val = list(zip(*emb_train_val_pairs))
+fatalities_train, fatalities_val = list(zip(*fatalities_train_val_pairs))
+
+all_results = {}
+
+def register_model_result(func):
+    def wrapper(model, *args, **kwargs):
+        res = func(model, *args, **kwargs)
+        all_results[model] = res
+        return res
+    return wrapper
+
+# future_cov means whether to use past_covariates or future_covariates;
+# this depends on individual model
+
+@register_model_result
+def train_and_eval_model(model, future_cov=False, **fit_kwargs):
+    cov_kwarg = 'future_covariates' if future_cov else 'past_covariates'
+    fit_kwargs.update({cov_kwarg: embeddings_scaled})
+    predictions = []
+    model.fit(fatalities_train, **fit_kwargs)
+    for i in range(len(fatalities_train)):
+        pred_fatalities = model.predict(series=fatalities_train[i], n=6,
+                                        **{cov_kwarg: embeddings_scaled[1]},
+                                        verbose=False)
+        pred_fatalities = scaler.inverse_transform(pred_fatalities)
+        predictions.append(pred_fatalities)
+    res = np.mean(mae(fatalities_val, predictions))
+    print(f'{model} has average MAE={res}')
+    return res
+
+train_and_eval_model(
+    NBEATSModel(input_chunk_length=3, output_chunk_length=3, random_state=42),
+    epochs=3, verbose=True)
+
+from darts.models import RandomForest, LightGBMModel, ARIMA, XGBModel
+
+train_and_eval_model(
+    RandomForest(lags=3, lags_past_covariates=3, output_chunk_length=3))
+
+train_and_eval_model(
+    LightGBMModel(lags=3, lags_past_covariates=3, output_chunk_length=3))
+
+train_and_eval_model(
+    XGBModel(lags=3, lags_past_covariates=3, output_chunk_length=3))
+
+all_results
+# {<darts.models.forecasting.nbeats.NBEATSModel at 0x7f715b2ab4f0>: 0.2739545361615834,
+#  <darts.models.forecasting.random_forest.RandomForest at 0x7f715e67e3d0>: 0.2398050682261209,
+#  <darts.models.forecasting.lgbm.LightGBMModel at 0x7f715e6aca00>: 0.29040398447284876,
+#  <darts.models.forecasting.xgboost.XGBModel at 0x7f715f0045b0>: 0.2396147225853637}
 
