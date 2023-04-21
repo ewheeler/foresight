@@ -1,7 +1,0 @@
-project:
-  #type: website
-  type: book
-  
-metadata-files:
-  #- _website.yml
-  - _book.yml
