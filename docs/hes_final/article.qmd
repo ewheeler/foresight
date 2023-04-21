@@ -1,0 +1,45 @@
+---
+title: "Predicting Conflict Escalation"
+author:
+  - name: Diana Kolusheva
+    email: email@h
+    affiliation: Harvard University
+  - name: Chad Stoughton
+    email: email@h
+    affiliation: Harvard University
+  - name: Evan Wheeler
+    email: email@h
+    affiliation: Harvard University
+format: pdf
+title-block-banner: true
+abstract: |
+  In 2021, UNICEF responded to 483 new and ongoing humanitarian situations in 153 countries (natural disasters, socio-political crises, health emergencies, nutrition crises, etc.) in addition to COVID-19 response efforts globally. Innovative approaches are necessary to scale the reach of UNICEF’s impact to meet the increasing needs of vulnerable children. Automated means of identifying and escalating potentially negative situations as they unfold—or before they unfold—can help UNICEF’s emergency response functions be more proactive and efficient in responding quickly to people in need. Predicting conflict has long been of interest to researchers and practitioners of international relations, and statistical and computational methods to do so can be found in the literature as early as 1944. Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict.
+
+---
+
+## Introduction
+
+
+## Conflict forecasting
+
+Some more text.
+
+## Methodology
+
+
+## News media and conflict data
+{{< embed figs.ipynb#fig-umap-3d >}}
+
+
+## Results
+
+### XGB
+
+### Transformer
+
+### Comparison with ...
+
+## Conclusions
+
+
+## Future work

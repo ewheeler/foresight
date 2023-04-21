@@ -1,0 +1,64 @@
+---
+title: "Critical path analysis"
+format: html
+---
+
+```{mermaid}
+gantt
+    dateFormat  YYYY-MM-DD
+    title      Group Four: Predicting Conflict Escalation
+
+    section Precapstone proposal
+    Chapter 01                  :done, pre1, 2023-01-10, 2023-01-12
+    Chapter 02                  :done, pre2, 2023-01-17, 3d
+    Chapter 03                  :done, pre3, 2023-01-19, 2d
+
+    section Compute and Data
+    Cloud infra                 :active, cloud, after pre3, 1w
+    Data ingestion pipelines    :done, datapipe, after pre3, 2w
+    GDELT full dataset          :active, gdelt, after cloud, 2w
+    GDELT sample dataset        :done, gsample, after pre3, 1w
+    ACLED dataset               :done, acled, after pre3, 1w
+    Sample training dataset     :active, sample, after acled, 1w
+    Full training dataset       :dataset, after gdelt, 1w
+
+    section Modelling
+    Establish models and approaches to evaluate :done,  m1, after pre3, 1w
+    Establish performance evaluation metrics    :active, m2, after a1, 1w
+    Model prototyping                           :proto, after dataset, 3w
+    Model evaluation                            :eval, after proto, 5w
+    Working final model                         :model, after eval, 2w
+ 
+    section Stretch goals
+    API or UI                                   :api, after proto, 2w
+    Deployed model                              :prod, after model, 1w
+
+    section Capstone paper
+    Draft report                                :draft, after eval, 2w
+    Final report                                :report, after draft, 1w
+    Presentation                                :pres, after report, 1w
+```
+
+```{mermaid}
+graph TD
+    H[Cloud infra \n\nEST: 1 EFT: 2 \nLST: 3 LFT: 4\n TR: 1 SL: 2] --> A
+    A[GDELT \n\nEST: 2 EFT: 4 \nLST: 4 LFT: 6\n TR: 2 SL: 2] -->B(Training dataset \n\nEST: 4 EFT: 5 \nLST: 6 LFT: 7\n TR: 1 SL: 2)
+    M[GDELT sample \n\nEST: 1 EFT: 2 \nLST: 2 LFT: 3\n TR: 1 SL: 1] --> I(Sample dataset \n\nEST: 2 EFT: 3 \nLST: 3 LFT: 4\n TR: 1 SL: 1)
+    G[ACLED \n\nEST: 1 EFT: 2 \nLST: 2 LFT: 3\n TR: 1 SL: 1] --> B
+
+    G --> I
+    B --> C{Working final model    \n\nEST: 11 EFT: 13 \nLST: 12 LFT: 14\n TR: 2 SL: 1}
+    B --> J{Model evaluation \n\nEST: 6 EFT: 11 \nLST: 7 LFT: 12\n TR: 5 SL: 1}
+    I --> K{Model prototyping \n\nEST: 3 EFT: 6 \nLST: 4 LFT: 7\n TR: 3 SL: 1}
+    
+    C --> |Optional|L{Deployed model \n\nEST: 13 EFT: 14 \nLST: 14 LFT: 15\n TR: 1 SL: 1}
+    K -->|Optional| D(API or UI \n\nEST: 6 EFT: 8 \nLST: 13 LFT: 15\n TR: 2 SL: 7)
+    
+    K --> J
+    J --> N(Draft report \n\nEST: 11 EFT: 13 \nLST: 12 LFT: 14\n TR: 2 SL: 1)
+    N --> F
+    J --> C
+    F --> E(Final presentation \n\nEST: 14 EFT: 15 \nLST: 15 LFT: 16\n TR: 1 SL: 1)
+    C --> F(Final report \n\nEST: 13 EFT: 14 \nLST: 14 LFT: 15\n TR: 1 SL: 1)
+```
+

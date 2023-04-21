@@ -1,0 +1,20 @@
+graph TD
+    H[Cloud infra \n\nEST: 1 EFT: 2 \nLST: 3 LFT: 4\n TR: 1 SL: 2] --> A
+    A[GDELT \n\nEST: 2 EFT: 4 \nLST: 4 LFT: 6\n TR: 2 SL: 2] -->B(Training dataset \n\nEST: 4 EFT: 5 \nLST: 6 LFT: 7\n TR: 1 SL: 2)
+    M[GDELT sample \n\nEST: 1 EFT: 2 \nLST: 2 LFT: 3\n TR: 1 SL: 1] --> I(Sample dataset \n\nEST: 2 EFT: 3 \nLST: 3 LFT: 4\n TR: 1 SL: 1)
+    G[ACLED \n\nEST: 1 EFT: 2 \nLST: 2 LFT: 3\n TR: 1 SL: 1] --> B
+
+    G --> I
+    B --> C{Working final model    \n\nEST: 11 EFT: 13 \nLST: 12 LFT: 14\n TR: 2 SL: 1}
+    B --> J{Model evaluation \n\nEST: 6 EFT: 11 \nLST: 7 LFT: 12\n TR: 5 SL: 1}
+    I --> K{Model prototyping \n\nEST: 3 EFT: 6 \nLST: 4 LFT: 7\n TR: 3 SL: 1}
+    
+    C --> |Optional|L{Deployed model \n\nEST: 13 EFT: 14 \nLST: 14 LFT: 15\n TR: 1 SL: 1}
+    K -->|Optional| D(API or UI \n\nEST: 6 EFT: 8 \nLST: 13 LFT: 15\n TR: 2 SL: 7)
+    
+    K --> J
+    J --> N(Draft report \n\nEST: 11 EFT: 13 \nLST: 12 LFT: 14\n TR: 2 SL: 1)
+    N --> F
+    J --> C
+    F --> E(Final presentation \n\nEST: 14 EFT: 15 \nLST: 15 LFT: 16\n TR: 1 SL: 1)
+    C --> F(Final report \n\nEST: 13 EFT: 14 \nLST: 14 LFT: 15\n TR: 1 SL: 1)
