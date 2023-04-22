@@ -10,7 +10,11 @@ author:
   - name: Evan Wheeler
     email: email@h
     affiliation: Harvard University
+lang: en
 format: pdf
+classoption: twocolumn
+bibliography: bibliography.bibtex
+embed-resources: true
 title-block-banner: true
 abstract: |
   In 2021, UNICEF responded to 483 new and ongoing humanitarian situations in 153 countries (natural disasters, socio-political crises, health emergencies, nutrition crises, etc.) in addition to COVID-19 response efforts globally. Innovative approaches are necessary to scale the reach of UNICEF’s impact to meet the increasing needs of vulnerable children. Automated means of identifying and escalating potentially negative situations as they unfold—or before they unfold—can help UNICEF’s emergency response functions be more proactive and efficient in responding quickly to people in need. Predicting conflict has long been of interest to researchers and practitioners of international relations, and statistical and computational methods to do so can be found in the literature as early as 1944. Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict.
@@ -19,90 +23,81 @@ abstract: |
 
 ## Introduction
 
+### Motivation
 In 2021, UNICEF responded to 483 new and ongoing humanitarian situations in 153 countries (natural disasters, socio-political crises, health emergencies, nutrition crises, etc.) in addition to COVID-19 response efforts globally. This is a sharp increase compared to 2018, when UNICEF responded to 285 new and ongoing humanitarian emergencies in 90 countries. With the rising threat of the climate emergency and shifts toward authoritarianism, children around the world will be increasingly vulnerable to the impacts of catastrophe and conflict. Recent trends and global economic uncertainty call into question whether Individual, corporate, and government donor contributions will grow in step with these increased needs.
 
 According to UNICEF’s 2023 Humanitarian Action for Children publication,
-> “Conflict drives 80 per cent of all humanitarian needs. The number of countries experiencing violent conflict is at a thirty-year high. And, around the world, attacks on children continue unabated. From Ukraine to Yemen and from Ethiopia to Nigeria and beyond, warring parties are flouting one of the most basic rules of war: protect the children.
-> …
-> Altogether, nearly 37 million children worldwide are displaced due to conflict and violence, a number of displaced children not seen since the Second World War. And this number does not even include those children displaced by poverty or climate
-> change or by the search for a better life. Nor does it include those children displaced in 2022 due to the war in Ukraine, which itself has caused the fastest-growing refugee crisis in Europe since the Second World War.
-> …
-> lack of rigorous data and analysis of human-induced hazards remains challenging”
+
+> “Conflict drives 80 per cent of all humanitarian needs. The number of countries experiencing violent conflict is at a thirty-year high. And, around the world, attacks on children continue unabated. From Ukraine to Yemen and from Ethiopia to Nigeria and beyond, warring parties are flouting one of the most basic rules of war: protect the children. … Altogether, nearly 37 million children worldwide are displaced due to conflict and violence, a number of displaced children not seen since the Second World War. And this number does not even include those children displaced by poverty or climate change or by the search for a better life. Nor does it include those children displaced in 2022 due to the war in Ukraine, which itself has caused the fastest-growing refugee crisis in Europe since the Second World War. … lack of rigorous data and analysis of human-induced hazards remains challenging”[@unicef]
 
 Innovative approaches are necessary to scale the reach of UNICEF’s impact to meet the increasing needs of vulnerable children. Automated means of identifying and escalating potentially negative situations as they unfold—or before they unfold—can help UNICEF’s emergency response functions be more proactive and efficient in responding quickly to people in need. Specifically, such an automated approach will reduce efforts spent monitoring world events and allow for the initiation of emergency preparedness protocols sooner.
 
-Our approach to international conflict draws from both neorealism and constructivism. Neorealism assumes that state actors are the primary drivers of international conflict, and emphasizes the role of power and competition as drivers of conflict. This informs our approach in that we will be modeling conflict at the level of states. Constructivism emphasizes the role of behavioral norms, ideological factors, and identity in shaping international relations. Conflicts between peoples and groups are shaped by these factors. Journalists both respond to and play a role in shaping these beliefs and norms, implying that their work should correlate with rising or falling conflict.
+### Objective
+
+Our practical objective was to develop a tool to support UNICEF in conflict identification and response. Our research objective was to demonstrate that a generalizable, global conflict prediction model is viable, and that such a model can be built using primarily public text data. 
 
 ## Conflict forecasting
 
-Some more text.
+Predicting conflict has long been of interest to researchers and practitioners of international relations, and statistical and computational methods to do so can be found in the literature as early as 1944. Modern methodologies that resemble those we outline here began to appear in the literature in the early 2010s, when researchers began using holdout datasets for model validation [@10.2307/40730711]. This shift followed work by Ward et al that sharply criticized the use of statistical significance tests on in-sample prediction to validate conflict models [@doi:10.1177/0022343309356491]. Our methodology closely mirrors that which emerged in the following decade, including that described in more contemporary work, such as Mueller and Ruah [@RePEc:cam:camdae:2220]. In essence, this methodology involves using time-lagged input data to predict some conflict label that corresponds to a date some time after the input data would have become available. The model is then validated using an unseen holdout set, typically at the end of the date range available in the data [@doi:10.1080/03050629.2022.2070745]. This overcomes the problem of overfitting observed in earlier methods, and provides a principled starting point from which different models can be compared.
 
-## Methodology
+Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict. This introduces a “small-data problem” where relatively few observations of conflict are available for a given country [@RePEc:cam:camdae:2220]. Some efforts have been made to overcome this by building generalizable models that can theoretically be used to make predictions on any country [@wen2023transformers]. We followed the latter approach in developing our model, hypothesizing that the larger number of observations available to a global model will allow it to extract more generalizable signals of conflict, and that such a model will be better able to predict unforeseen risks in countries with little available training data.
 
+There are two principal ways in which our approach differs from previous efforts described in the literature. The first is our choice of model. Many earlier approaches, including those in O'Brien, used more traditional statistical methods, including logistic regression and actor simulations, to predict conflict. Contemporaneous work demonstrated that neural networks can outperform these traditional approaches [@10.2307/4145319]. Despite this, neural networks do not seem to have been widely adopted in conflict prediction modeling – though there are some examples, such as in Chen et al [@DBLP:conf/sac/ChenJY20]. Our work explores both approaches, and we find similar performance in some metrics, with major trade offs in other areas. 
+
+The second principal difference in our approach is our choice of input data. While newspaper and media content has been used in conflict prediction models before, it has only been included as a supplement to models that primarily rely on other features. Despite this, models that include text features have been shown to outperform equivalent models that do not [@RePEc:cam:camdae:2220]. In contrast, our approach istext-first. In other words, we made predictions primarily from text before adding other features. To achieve this, we relied on text embeddings of the news content. To the best of our knowledge, no conflict prediction model described in the literature makes use of text embeddings. Previous efforts have included statistical analysis of text, and unsupervised Latent Dirichlet Allocation (LDA) for topic extraction [@RePEc:cam:camdae:2220]. These comparatively crude approaches to Natural Language Processing (NLP) have relegated text data to a peripheral role in conflict prediction. Our method uses text as the primary data source to make meaningful predictions. Such a model removes the need for the extensive expert surveys described in O’Brien, and overcomes the weaknesses of the strongly mean-regressing time-series models described in Mueller and Rauh.
 
 ## News media and conflict data
 
-The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world. With updates every fifteen minutes, GDELT’s Event Database documents physical events such as diplomatic interactions, social unrest, and military action. Approximately 60 attributes are assigned to each event from GDELT’s processing and analysis, including named entities involved, geolocation details, categorization among 300 event types, as well as metrics related to average ‘tone’ of articles about the event and potential severity of event impact. In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512 dimension news-article-level embeddings using the Universal Sentence Encoder.
+The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world [@leetaru2013gdelt]. With updates every fifteen minutes, GDELT’s Event Database documents physical events such as diplomatic interactions, social unrest, and military action. Approximately 60 attributes are assigned to each event from GDELT’s processing and analysis, including named entities involved, geolocation details, categorization among 300 event types, as well as metrics related to average ‘tone’ of articles about the event and potential severity of event impact. In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512 dimension news-article-level embeddings using the Universal Sentence Encoder [@gdeltgsg].
 
-The Armed Conflict Location & Event Data Project (ACLED)’s team of researchers monitor thousands of sources in 20 languages to generate a dataset with monthly totals of conflict events and their related fatalities. ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, or protests involving more than three people. ACLED’s monthly, per-country totals are generally published every two weeks. United Nations Office for the Coordination of Humanitarian Affairs’ (OCHA) Humanitarian Data Exchange platform hosts these regular updates.
+The GDELT Dataset has been used for a wide variety of research purposes, including for conflict prediction [@DBLP:conf/sac/ChenJY20]. While we believed this to be the best dataset available for our purposes, prior research has revealed some limitations that we must consider. GDELT’s coverage overrepresents the western world, particularly the United States and Europe. GDELT does represent Russia, India and China better than other event datasets, but it continues to underrepresent other parts of the world, particularly the global south. English is the most common language in the GDELT dataset, comprising more than 40% of the articles in its corpus [@Kwak_An_2021].
 
-Our training data was derived from this GDELT and ACLED data. GDELT news article embeddings, averaged per-country and per-month, serve as our independent variable. Target variables for training were derived from ACLED’s conflict metrics. We derived a binary response variable representing conflict escalation three months into the future with respect to each month’s average article embeddings. Specifically, the binary response variable is calculated by TK. Our goal was to use GDELT data from a given time window to predict the ACLED metrics from a later time window.
+The [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/)’s team of researchers monitor thousands of sources in 20 languages to generate a dataset with monthly totals of conflict events and their related fatalities [@doi:10.1177/0022343310378914]. ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, and  protests.
 
-### GDELT
+While many of GDELT’s databases reflect news articles from 1 January 1979 onward, GDELT’s news article embeddings exist only from 1 January 2020, limiting the time period for which training data can be drawn. Availability of ACLED’s monthly event and fatality totals varies by country, but event and fatality totals are available for all countries since at least 1 January 2020.
+
+Our training data was derived from these GDELT and ACLED data. GDELT news article embeddings serve as our independent variable. Target variables for training were derived from ACLED’s conflict metrics. Hard dates were set for train, test, and validation splits, and none of our models saw data published after October 2022 during training, with the remaining months used for testing and validation.
+
 
 ```{mermaid}
-%%| fig-width: 12
-graph TD
-    A[Conflict event] -->|reporter| B(Online news article)
-    B --> C(Scraped webpage)
+%%| fig-width: 3
+%%| fig-height: 5
+%%| fig-cap: Fig 1. Overview of data generation process for our conflict dataset 
+flowchart TD
+    GSG[GDELT Global Similarty Graph] -->|sample 20% of daily files| Merge{Merge on article URL,\n select relevant features}
+    GKG[GDELT Global Knowledge Graph] -->|sample 20% of daily files| Merge
 
-    subgraph GDELT
-        C --> |Google Chrome Compact Language Detector - CLD2|D(Language detection)
-        D --> |Conditional random field and various lang-specific|E(Word segmentation)
-        E --> F(Morphological analysis)
-        F --> G(Sentiment and emotional assessment)
-        G --> H(Sentence and clause segmentation)
-        H --> I(Low pass translation)
-        H --> J(Mid pass translation)
-        H --> K(Toponymic translation)
-        H --> L(Well known entity translation)
-        I --> M(Candidate translation ranking)
-        M --> O(Chosen translation)
-        J --> M
-        M --> |some langs|N(High pass translation)
-        N --> O
-        O --> |Moses and other grammer models|Q(User adaptation - dynamic language models)
-        Q --> R(High pass UNK substitution)
-        R --> S(Recapitalization models)
-        S --> T(English translation, events, entities, geocoding, and scores)
-        T --> |Universal Sentence Encoder| U(English article embeddings)
-        K --> T
-        L --> T
-    end
+    Merge --> GDELT(GDELT dataset)
 
-    B --> |human and machine processes|CC(Judgement against ACLED event inclusion criteria)
-    subgraph ACLED
-        CC --> |human and machine processes|DD[Coded events, categories, event actors, geolocations, reported fatalities]
-        DD --> |three rounds of human review|DD
-        DD --> EE(Weekly aggregations of events and fatalities)
-    end
+    ACLED[ACLED monthly conflict totals] --> Spike{Calculate our lagged\n 'spike' binary variable}
 
-    EE --> V(Timeseries dataset)
-    U --> V
-    V --> |Our model| W(Our conflict predictions)
+    GDELT --> Data(Time-partitioned train, val, & test datasets)
+    Spike --> Data
 ```
 
-### ACLED
+## Defining Conflict Escalation
 
+Our task of modeling conflict escalation required a precise definition of what conflict escalation is. The raw event and fatality counts provided by ACLED served as the basis for our conflict metric, however, to achieve our objective of creating a generalizable conflict model, we required a metric that was consistent across varying local conditions. Small changes in the absolute number of monthly fatalities can have wildly different implications depending on the country and time period. 
 
-## Results
+To address this, we derived a metric designed to highlight relative “spikes” in political violence. Calculating whether a spike occurred in a given month is a two-step process. First we calculated the trend in violence for a given month, defined by the slope of an ordinary least squares regression of the number of ACLED-documented fatalities that occurred in the target month, and the preceding two months. This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any given time. Next, we calculated whether that slope was in the 75th percentile of such slopes in the target country for the preceding two years. This produced a binary metric that is sensitive to small increases in political violence in peaceful countries, while also filtering out small fluctuations in long-standing conflicts.  
 
-### XGB
+## Methodology
 
-![Precision-recall curve](imgs/prc.png){width=33%, fig-alt="Precision-recall curve."}
+In order to push beyond prior attempts at conflict prediction, our approach to modeling drew from prior work in other fields. Our training data was structured such that each document is represented as an embedding vector, and multiple documents are combined with a label to create an aggregate picture of recent events. This is unique in that it is both a Natural Language Processing (NLP) task, and a time-series task, with each vector representing both semantic meaning, and an event or observation at a point in time. This lends itself to a variety of different approaches, and we have paid particular attention to the Transformer architecture. We reviewed recent work on Transformers for time-series data, and we hypothesized that the architecture’s ability to extract long-term dependencies, as well as its ability to find complex relationships between vector embeddings made it uniquely well-suited to this task [@wen2023transformers].
+
+We explored two approaches for getting conflict spike signals from the embeddings. In the first approach we used a fit-in-memory dataset of monthly embedding averages per country and applied statistical classification models such as K Nearest Neighbors and XGBoost. In the second approach we sampled article level embeddings and applied Transformer-based models. See the figures (X, Y) for details of both methods.
+
+### Statistical model using monthly embedding averages
+
+In this approach we prepared the dataset by averaging the embeddings per country per month. We also included one-hot encoded columns for countries. Since we only had access to embeddings starting in January 2020, the total length of this dataset was just a little over 6,000 samples (training, validation, and test sets combined). Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from “curse of dimensionality”. This was handled by performing Principal Component Analysis – we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance. Another issue was a class imbalance – conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
+
+The model used in this approach is a stacked model that averages probabilities independently predicted by a K Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
 
 ```{mermaid}
-flowchart LR
+%%| fig-width: 3
+%%| fig-height: 5
+%%| fig-cap: Fig 2. Statistical model architecture
+flowchart TD
     GDELT[GDELT Embeddings] -->|average by country by month| AGG(Monthly news representation)
     Countries[Country labels] -->|one-hot encoding| AGG
 
@@ -115,13 +110,50 @@ flowchart LR
     AVG --> Pred(Prediction of conflict escalation in 3 months)
 
     ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
-    Spike(Conflict response binary variable) --> XGD
+    Spike(Conflict response\n binary variable) --> XGD
     Spike --> KNN
 ```
 
-### Transformer
+### Transformer Model using Resampled Embeddings
 
-![ROC](imgs/roc.png){width=33%, fig-alt="Reciever operating characteristic curve."}
+Our second approach used a pair of transformer models to extract information directly from the GDELT embedding corpus.[@vaswani2017attention] Architecturally, both models are encoder-only transformers, but for simplicity we will refer to the first of these models as “the encoder” and the second as the “the classifier”.
+
+Prior to training, the GDELT dataset was split into one 512xn matrix for each country and month where n is the number of articles in the dataset published in that month related to that country. Each of these matrices was then split into several random subsamples of 512x50. Samples for countries in which n<50 were padded, and multiple samples were taken for countries in which n >50. This resampling dramatically increased the number of training samples by acting as though the same month had occurred multiple times while still maintaining uniqueness of each sample. Simultaneously, limiting the size of each sample to 50 articles reduced the dimensionality of each sample, reducing the risk of overfitting.
+
+The encoder was then trained using these samples, with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons, and its weights were frozen. The encoder was then used to scan each of the original 512xn matrices, resulting in a length-16 vector for each 512x50 subsample. This reduced the dimensions of each sample to 16x(n/50). 
+
+The classifier was then trained on this new, distilled dataset without resampling. The same time-shifted spike metric was again used as the training target.  The reduced dimensionality of this dataset was sufficient to offset the risk of overfitting. 
+
+```{mermaid}
+%%| fig-width: 3
+%%| fig-height: 5
+%%| fig-cap: Fig 3. Transformer model architecture
+flowchart TD
+    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
+
+    Articles --> Trans1{Encoder\n transformer}
+    Trans1 -->|classifier head present during training| Compact(16 dimension representations)
+
+    Compact --> Trans2{Binary\n classifier\n transformer}
+    Trans2 --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response\n binary variable) --> Trans2
+
+    Spike -->|included during model training| Trans1
+```
+
+## Results
+
+We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
+
+TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
+
+Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe.
+
+TODO: map comparison images
+
+While performance is often the main objective to optimize for when developing prediction models, one of our goals was to develop a model that can assist UNICEF in their decision making. With that in mind, interpretability and cost of deployment are important factors for model evaluation.
 
 ### Comparison with ...
 
@@ -129,3 +161,9 @@ flowchart LR
 
 
 ## Future work
+
+
+## References
+
+::: {#refs}
+:::
