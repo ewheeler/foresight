@@ -19,6 +19,19 @@ abstract: |
 
 ## Introduction
 
+In 2021, UNICEF responded to 483 new and ongoing humanitarian situations in 153 countries (natural disasters, socio-political crises, health emergencies, nutrition crises, etc.) in addition to COVID-19 response efforts globally. This is a sharp increase compared to 2018, when UNICEF responded to 285 new and ongoing humanitarian emergencies in 90 countries. With the rising threat of the climate emergency and shifts toward authoritarianism, children around the world will be increasingly vulnerable to the impacts of catastrophe and conflict. Recent trends and global economic uncertainty call into question whether Individual, corporate, and government donor contributions will grow in step with these increased needs.
+
+According to UNICEF’s 2023 Humanitarian Action for Children publication,
+> “Conflict drives 80 per cent of all humanitarian needs. The number of countries experiencing violent conflict is at a thirty-year high. And, around the world, attacks on children continue unabated. From Ukraine to Yemen and from Ethiopia to Nigeria and beyond, warring parties are flouting one of the most basic rules of war: protect the children.
+> …
+> Altogether, nearly 37 million children worldwide are displaced due to conflict and violence, a number of displaced children not seen since the Second World War. And this number does not even include those children displaced by poverty or climate
+> change or by the search for a better life. Nor does it include those children displaced in 2022 due to the war in Ukraine, which itself has caused the fastest-growing refugee crisis in Europe since the Second World War.
+> …
+> lack of rigorous data and analysis of human-induced hazards remains challenging”
+
+Innovative approaches are necessary to scale the reach of UNICEF’s impact to meet the increasing needs of vulnerable children. Automated means of identifying and escalating potentially negative situations as they unfold—or before they unfold—can help UNICEF’s emergency response functions be more proactive and efficient in responding quickly to people in need. Specifically, such an automated approach will reduce efforts spent monitoring world events and allow for the initiation of emergency preparedness protocols sooner.
+
+Our approach to international conflict draws from both neorealism and constructivism. Neorealism assumes that state actors are the primary drivers of international conflict, and emphasizes the role of power and competition as drivers of conflict. This informs our approach in that we will be modeling conflict at the level of states. Constructivism emphasizes the role of behavioral norms, ideological factors, and identity in shaping international relations. Conflicts between peoples and groups are shaped by these factors. Journalists both respond to and play a role in shaping these beliefs and norms, implying that their work should correlate with rising or falling conflict.
 
 ## Conflict forecasting
 
@@ -28,6 +41,12 @@ Some more text.
 
 
 ## News media and conflict data
+
+The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world. With updates every fifteen minutes, GDELT’s Event Database documents physical events such as diplomatic interactions, social unrest, and military action. Approximately 60 attributes are assigned to each event from GDELT’s processing and analysis, including named entities involved, geolocation details, categorization among 300 event types, as well as metrics related to average ‘tone’ of articles about the event and potential severity of event impact. In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512 dimension news-article-level embeddings using the Universal Sentence Encoder.
+
+The Armed Conflict Location & Event Data Project (ACLED)’s team of researchers monitor thousands of sources in 20 languages to generate a dataset with monthly totals of conflict events and their related fatalities. ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, or protests involving more than three people. ACLED’s monthly, per-country totals are generally published every two weeks. United Nations Office for the Coordination of Humanitarian Affairs’ (OCHA) Humanitarian Data Exchange platform hosts these regular updates.
+
+Our training data was derived from this GDELT and ACLED data. GDELT news article embeddings, averaged per-country and per-month, serve as our independent variable. Target variables for training were derived from ACLED’s conflict metrics. We derived a binary response variable representing conflict escalation three months into the future with respect to each month’s average article embeddings. Specifically, the binary response variable is calculated by TK. Our goal was to use GDELT data from a given time window to predict the ACLED metrics from a later time window.
 
 ### GDELT
 
@@ -84,10 +103,20 @@ graph TD
 
 ```{mermaid}
 flowchart LR
-  A[Hard edge] --> B(Round edge)
-  B --> C{Decision}
-  C --> D[Result one]
-  C --> E[Result two]
+    GDELT[GDELT Embeddings] -->|average by country by month| AGG(Monthly news representation)
+    Countries[Country labels] -->|one-hot encoding| AGG
+
+    AGG -->|PCA| PCA(169 dimension representation)
+    PCA --> KNN{KNN}
+    PCA --> XGD{XGBoost}
+
+    XGD --> AVG{Mean}
+    KNN --> AVG
+    AVG --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response binary variable) --> XGD
+    Spike --> KNN
 ```
 
 ### Transformer
