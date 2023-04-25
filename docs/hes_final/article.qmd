@@ -11,9 +11,33 @@ author:
     email: email@h
     affiliation: Harvard University
 lang: en
-format: pdf
-classoption: twocolumn
+format:
+  pdf:
+    classoption:
+    - twocolumn
 bibliography: bibliography.bibtex
+include-in-header:
+  - text: |
+      \usepackage{float}
+      \makeatletter
+      \let\oldlt\longtable
+      \let\endoldlt\endlongtable
+      \def\longtable{\@ifnextchar[\longtable@i \longtable@ii}
+      \def\longtable@i[#1]{\begin{figure}[H]
+      \onecolumn
+      \begin{minipage}{0.5\textwidth}
+      \oldlt[#1]
+      }
+      \def\longtable@ii{\begin{figure}[H]
+      \onecolumn
+      \begin{minipage}{0.5\textwidth}
+      \oldlt
+      }
+      \def\endlongtable{\endoldlt
+      \end{minipage}
+      \twocolumn
+      \end{figure}}
+      \makeatother
 embed-resources: true
 title-block-banner: true
 abstract: |
@@ -118,9 +142,9 @@ flowchart TD
 
 Our second approach used a pair of transformer models to extract information directly from the GDELT embedding corpus.[@vaswani2017attention] Architecturally, both models are encoder-only transformers, but for simplicity we will refer to the first of these models as “the encoder” and the second as the “the classifier”.
 
-Prior to training, the GDELT dataset was split into one 512xn matrix for each country and month where n is the number of articles in the dataset published in that month related to that country. Each of these matrices was then split into several random subsamples of 512x50. Samples for countries in which n<50 were padded, and multiple samples were taken for countries in which n >50. This resampling dramatically increased the number of training samples by acting as though the same month had occurred multiple times while still maintaining uniqueness of each sample. Simultaneously, limiting the size of each sample to 50 articles reduced the dimensionality of each sample, reducing the risk of overfitting.
+Prior to training, the GDELT dataset was split into one $512 x n$ matrix for each country and month where n is the number of articles in the dataset published in that month related to that country. Each of these matrices was then split into several random subsamples of $512 x 50$. Samples for countries in which $n < 50$ were padded, and multiple samples were taken for countries in which $n > 50$. This resampling dramatically increased the number of training samples by acting as though the same month had occurred multiple times while still maintaining uniqueness of each sample. Simultaneously, limiting the size of each sample to 50 articles reduced the dimensionality of each sample, reducing the risk of overfitting.
 
-The encoder was then trained using these samples, with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons, and its weights were frozen. The encoder was then used to scan each of the original 512xn matrices, resulting in a length-16 vector for each 512x50 subsample. This reduced the dimensions of each sample to 16x(n/50). 
+The encoder was then trained using these samples, with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons, and its weights were frozen. The encoder was then used to scan each of the original $512 x n$ matrices, resulting in a length-16 vector for each $512 x 50$ subsample. This reduced the dimensions of each sample to $16 x (n/50)$.
 
 The classifier was then trained on this new, distilled dataset without resampling. The same time-shifted spike metric was again used as the training target.  The reduced dimensionality of this dataset was sufficient to offset the risk of overfitting. 
 
@@ -148,6 +172,22 @@ flowchart TD
 We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
 
 TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
+```{python}
+#| echo: false
+#| label: tbl-planets
+#| tbl-cap: Planets
+
+from IPython.display import Markdown
+from tabulate import tabulate
+table = [["Sun",696000,1989100000],
+         ["Earth",6371,5973.6],
+         ["Moon",1737,73.5],
+         ["Mars",3390,641.85]]
+Markdown(tabulate(
+  table,
+  headers=["Planet","R (km)", "mass (x 10^29 kg)"]
+))
+```
 
 Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe.
 
