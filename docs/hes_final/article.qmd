@@ -16,6 +16,7 @@ format:
     classoption:
     - twocolumn
 bibliography: bibliography.bibtex
+# https://github.com/quarto-dev/quarto-cli/discussions/2786
 include-in-header:
   - text: |
       \usepackage{float}
@@ -38,6 +39,15 @@ include-in-header:
       \twocolumn
       \end{figure}}
       \makeatother
+# https://tex.stackexchange.com/questions/31301/how-to-reduce-the-number-of-hyphenation
+include-before-body:
+  - text: |
+      \pretolerance=5000
+      \tolerance=9000
+      \emergencystretch=0pt
+      \exhyphenpenalty=100
+      \righthyphenmin=4
+      \lefthyphenmin=5
 embed-resources: true
 title-block-banner: true
 abstract: |
