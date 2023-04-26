@@ -49,6 +49,7 @@ include-before-body:
       \righthyphenmin=4
       \lefthyphenmin=5
 embed-resources: true
+notebook-links: false
 title-block-banner: true
 abstract: |
   In 2021, UNICEF responded to 483 new and ongoing humanitarian situations in 153 countries (natural disasters, socio-political crises, health emergencies, nutrition crises, etc.) in addition to COVID-19 response efforts globally. Innovative approaches are necessary to scale the reach of UNICEF’s impact to meet the increasing needs of vulnerable children. Automated means of identifying and escalating potentially negative situations as they unfold—or before they unfold—can help UNICEF’s emergency response functions be more proactive and efficient in responding quickly to people in need. Predicting conflict has long been of interest to researchers and practitioners of international relations, and statistical and computational methods to do so can be found in the literature as early as 1944. Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict.
@@ -109,6 +110,22 @@ flowchart TD
     Spike --> Data
 ```
 
+```{python}
+#| echo: false
+#| label: tbl-planets
+#| tbl-cap: Planets
+
+from IPython.display import Markdown
+from tabulate import tabulate
+table = [["Sun",696000,1989100000],
+         ["Earth",6371,5973.6],
+         ["Moon",1737,73.5],
+         ["Mars",3390,641.85]]
+Markdown(tabulate(
+  table,
+  headers=["Planet","R (km)", "mass (x 10^29 kg)"]
+))
+```
 ## Defining Conflict Escalation
 
 Our task of modeling conflict escalation required a precise definition of what conflict escalation is. The raw event and fatality counts provided by ACLED served as the basis for our conflict metric, however, to achieve our objective of creating a generalizable conflict model, we required a metric that was consistent across varying local conditions. Small changes in the absolute number of monthly fatalities can have wildly different implications depending on the country and time period. 
@@ -184,24 +201,12 @@ flowchart TD
 We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
 
 TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
-```{python}
-#| echo: false
-#| label: tbl-planets
-#| tbl-cap: Planets
 
-from IPython.display import Markdown
-from tabulate import tabulate
-table = [["Sun",696000,1989100000],
-         ["Earth",6371,5973.6],
-         ["Moon",1737,73.5],
-         ["Mars",3390,641.85]]
-Markdown(tabulate(
-  table,
-  headers=["Planet","R (km)", "mass (x 10^29 kg)"]
-))
-```
+{{< embed figs.ipynb#tbl-metrics >}}
 
 Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe.
+
+{{< embed figs.ipynb#fig-roc >}}
 
 TODO: map comparison images
 
