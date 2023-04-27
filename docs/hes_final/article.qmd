@@ -202,7 +202,9 @@ We looked at the area under the ROC curve, F1 score, precision, recall and confu
 
 TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
 
-{{< embed figs.ipynb#tbl-metrics >}}
+{{< embed figs.ipynb#tbl-best-max-metrics >}}
+
+{{< embed figs.ipynb#tbl-best-min-metrics >}}
 
 Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe.
 
