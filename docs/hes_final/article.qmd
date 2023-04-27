@@ -208,6 +208,8 @@ Further investigation showed that while overall numeric metrics look similar, th
 
 {{< embed figs.ipynb#fig-roc >}}
 
+{{< embed figs.ipynb#fig-prc >}}
+
 TODO: map comparison images
 
 While performance is often the main objective to optimize for when developing prediction models, one of our goals was to develop a model that can assist UNICEF in their decision making. With that in mind, interpretability and cost of deployment are important factors for model evaluation.
