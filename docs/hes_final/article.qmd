@@ -198,7 +198,10 @@ flowchart TD
 
 ## Results
 
-We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
+We evaluated our models with both a research and a practical objectives in mind.
+
+From a research perspective we were interested in feasibility of making accurate and generalizable predictions of
+conflict escalation using publicly available text embeddings. We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
 
 TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
 
@@ -215,17 +218,22 @@ generalizability is a significant reason to prefer Transformer architecture and 
 
 TODO: map comparison images
 
-While performance is often the main objective to optimize for when developing prediction models, one of our goals was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embedding dataset fits in memory while resampling article level embeddings requires additional data engineering
+While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embedding dataset fits in memory while resampling article level embeddings requires additional data engineering
 steps to be processed in batches. Both dataset size and corresponding model size make average embeddings based statistical
 model more attractive from this perspective.
 
-Overall, the results suggest that it is possible to predict upcoming conflict escalation from text embeddings of news articles. 
-Different data sampling and modeling approaches produce comparable results based on common metrics. Transformer-based model generalizes better across geographies while statistical model provides a size/cost of deployment advantage.
+We think that both approaches produced promising results and the model choice depends on the developers' specific goals and available resources.
 
 ### Comparison with ...
 
 ## Conclusions
 
+In this work we explored the possibility of predicting future geo-political conflict escalation at a country level
+using a global collection of news publications. We explored different ways of aggregating the data and
+applied both statistical machine learning and deep learning transformer architecture models.
+The results suggest that text embeddings provide a strong enough signal to make such predictions.
+Different data sampling and modeling approaches produce comparable results based on common metrics. 
+Transformer-based model generalizes better across geographies while statistical model provides a size/cost of deployment advantage.
 
 ## Future work
 
