@@ -237,6 +237,44 @@ Transformer-based model generalizes better across geographies while statistical 
 
 ## Future work
 
+We think there are many ways to extend this work. We can group them to align with our initial research and
+practical objectives.
+
+### Future research directions
+
+One of the potential research extensions of this work is to continue experimenting
+with data sampling and aggregation approaches. We used either monthly averages 
+to create $512x1$ vectors or article level samples to create $512x50$ matrices
+in our dataset preparation. While we received some promising results, it is possible 
+that the first approach makes the data too coarse and the second too noisy. Another
+alternative could be generating daily averages and combining them into $512x31$ (largest number of days in a month)
+matrices. This could potentially be more sensitive to the signal than the monthly averages
+and less noisy than article level samples.
+
+Another direction is dimensionality reduction technique. We observed a clear separation of clusters using a
+UMAP technique supervised by the Spike target variable. Using the dataset reduced with this technique
+could be a better alternative to a principal component analysis our statistical model uses.
+
+On the transormers side, the output of the encoder also represented a reduced dimension dataset
+further fed into the second transformer, the classifier. Using the output of the encoder as input to other
+classifiers could be another direction of research.
+
+Finally, due to time and resource constraints in this project we used 20% subset
+of daily news articles. Increasing that percentage could potentially lead to better results.
+
+### Future practical directions
+
+Building an application with a user interface could be a natural extension of this work.
+We envision a dashboard where a user can view a world map where countries are heatmap colored
+according to the estimated probability of escalating conflict. Countries with highest risk
+can be flagged or shown to a user in a separate view. In addition to the visual part
+of this application it is important to ensure that the model is deployed and
+can receive new data input and make inference.
+
+Building a more robust data processing pipeline is another important direction. This would involve
+designing either a batch or streaming system that can reliably collect data, preprocess
+and aggregate it into required format, train the model and make predictions. The system should handle 
+computational resources and cost constraints.
 
 ## References
 
