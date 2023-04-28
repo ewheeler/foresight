@@ -206,7 +206,8 @@ TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
 
 {{< embed figs.ipynb#tbl-best-min-metrics >}}
 
-Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe.
+Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the
+generalizability is a significant reason to prefer Transformer architecture and resampled dataset.
 
 {{< embed figs.ipynb#fig-roc >}}
 
@@ -214,7 +215,12 @@ Further investigation showed that while overall numeric metrics look similar, th
 
 TODO: map comparison images
 
-While performance is often the main objective to optimize for when developing prediction models, one of our goals was to develop a model that can assist UNICEF in their decision making. With that in mind, interpretability and cost of deployment are important factors for model evaluation.
+While performance is often the main objective to optimize for when developing prediction models, one of our goals was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embedding dataset fits in memory while resampling article level embeddings requires additional data engineering
+steps to be processed in batches. Both dataset size and corresponding model size make average embeddings based statistical
+model more attractive from this perspective.
+
+Overall, the results suggest that it is possible to predict upcoming conflict escalation from text embeddings of news articles. 
+Different data sampling and modeling approaches produce comparable results based on common metrics. Transformer-based model generalizes better across geographies while statistical model provides a size/cost of deployment advantage.
 
 ### Comparison with ...
 
