@@ -184,14 +184,23 @@ We evaluated our models with both a research and a practical objectives in mind.
 From a research perspective we were interested in feasibility of making accurate and generalizable predictions of
 conflict escalation using publicly available text embeddings. We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
 
-TODO: Table (for numerical metrics) and plots (for roc_auc) for 2 models
+![Model performance metrics](imgs/tbl-best-max-metrics.png){width=50%}
 
+![Model performance metrics](imgs/tbl-best-min-metrics.png){width=50%}
+
+![Receiver Operator Characteristics](imgs/fig-roc.png){width=50%}
+
+![Precision Recall Curve](imgs/fig-prc.png){width=50%}
 
 Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the
 generalizability is a significant reason to prefer Transformer architecture and resampled dataset.
 
 
-TODO: map comparison images
+![Predictions for 2023-01 from transformer model](imgs/fig-y_pred_proba-transformer-202301.png){width=50%}
+
+![Predictions for 2023-01 from xgboost model](imgs/fig-y_pred_proba-xgboost-202301.png){width=50%}
+
+![Predictions for 2023-01 from ffnn model](imgs/fig-y_pred_proba-ffnn-202301.png){width=50%}
 
 While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embedding dataset fits in memory while resampling article level embeddings requires additional data engineering
 steps to be processed in batches. Both dataset size and corresponding model size make average embeddings based statistical
