@@ -177,6 +177,38 @@ flowchart TD
     Spike -->|included during model training| Trans1
 ```
 
+## Feed Forward Neural Network
+
+Our third approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
+
+![Distribution of supervised UMAP reduction to 2 dimensions](imgs/fig-umap2d-jointplot.png){width=50%}
+
+![Scatterplot of 2d UMAP reduced articles with spike labels](imgs/fig-umap2d-ds-targets.png){width=50%}
+
+Country context inputs consisted of two numerical indicators ('Under-five mortality rate 2019' and 'Adolescent population 2020 Proportion of total population (%) Total') and three one-hot encoded categorical indicators (3 categories of Human Development Index ranges, 4 categories of gross national income per capita, and 3 categories of Fragile States Index ranges).
+
+```{mermaid}
+%%| fig-width: 3
+%%| fig-height: 5
+%%| fig-cap: Fig 6. Feed forward neural network model architecture
+flowchart TD
+    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
+
+    Articles --> UMAP{Supervised UMAP}
+    UMAP --> Compact(128 dimension representations)
+
+    Compact --> FFNN{Feed Forward Neural Network}
+    FFNN --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response binary variable) --> |included during training|UMAP
+
+    Spike -->FFNN
+
+    Context[Country context indicators] --> FFNN
+```
+
+
 ## Results
 
 We evaluated our models with both a research and a practical objectives in mind.
@@ -233,10 +265,6 @@ that the first approach makes the data too coarse and the second too noisy. Anot
 alternative could be generating daily averages and combining them into $512x31$ (largest number of days in a month)
 matrices. This could potentially be more sensitive to the signal than the monthly averages
 and less noisy than article level samples.
-
-Another direction is dimensionality reduction technique. We observed a clear separation of clusters using a
-UMAP technique supervised by the Spike target variable. Using the dataset reduced with this technique
-could be a better alternative to a principal component analysis our statistical model uses.
 
 The transformer models have a great deal of room for hyperparameter tuning. Further experimentation with the size of the encoder output, the number of articles per training sample, and implementing overlapping strides during distillation could all improve the downstream performance of the classifier. It may also be possible to use the output of the encoder as input to some other classification model architecture. 
 
