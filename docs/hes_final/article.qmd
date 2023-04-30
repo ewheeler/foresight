@@ -232,11 +232,11 @@ Further investigation showed that while overall numeric metrics look similar, th
 generalizability is a significant reason to prefer Transformer architecture and resampled dataset.
 
 
-![Predictions for 2023-01 from transformer model](imgs/fig-y_pred_proba-transformer-202301.png){width=50%}
+![Transformer model Predictions on test data](imgs/fig-transformer-test-predictions.png){width=55%}
 
-![Predictions for 2023-01 from xgboost model](imgs/fig-y_pred_proba-xgboost-202301.png){width=50%}
+![XGBoost model predictions on test data](imgs/fig-xgboost-test-predictions.png){width=55%}
 
-![Predictions for 2023-01 from ffnn model](imgs/fig-y_pred_proba-ffnn-202301.png){width=50%}
+![FFNN model predictions on test data](imgs/fig-ffnn-test-predictions.png){width=55%}
 
 While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embedding dataset fits in memory while resampling article level embeddings requires additional data engineering
 steps to be processed in batches. Both dataset size and corresponding model size make average embeddings based statistical
