@@ -94,6 +94,8 @@ In contrast to prior work, however, we do not treat the simple presence of a fat
 
 To address this, we derived a metric designed to highlight relative “spikes” in political violence. Calculating whether a spike occurred in a given month is a two-step process. First, we calculated the trend in violence for a given month, defined by the slope of an ordinary least squares regression of the number of ACLED-documented fatalities that occurred in the target month, and the preceding two months. This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any given time. Next, we calculated whether that slope was in the $75^{th}$ percentile of such slopes in the target country for the preceding two years. This produced a binary metric that is sensitive to small increases in political violence in peaceful countries, while also filtering out small fluctuations in long-standing conflicts.
 
+![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png)
+
 ### News Content Data
 
 The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world [@leetaru2013gdelt]. With updates every fifteen minutes, GDELT’s Event Database documents physical events such as diplomatic interactions, social unrest, and military action. Approximately 60 attributes are assigned to each event from GDELT’s processing and analysis, including named entities involved, geolocation details, categorization among 300 event types, as well as metrics related to average ‘tone’ of articles about the event and potential severity of event impact. In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512 dimension news-article-level embeddings using the Universal Sentence Encoder [@gdeltgsg].
@@ -152,13 +154,12 @@ Our second approach used a pair of transformer models to extract information dir
 
 The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. The classifier could then be used to make final predictions on the resulting distilled dataset.
 
-To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512xn$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512x50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset. 
+To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
 
 This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive les, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
 
-With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512x50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16x\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target. 
+With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target.
 In contrast to our statistical modeling approach, the transformer models are trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
-
 
 ```{mermaid}
 %%| fig-width: 3
@@ -259,10 +260,10 @@ We foresee several ways to extend this work, and there are exciting opportunitie
 
 One of the potential research extensions of this work is to continue experimenting
 with data sampling and aggregation approaches. We used either monthly averages 
-to create $512x1$ vectors or article level samples to create $512x50$ matrices
+to create $512\times1$ vectors or article level samples to create $512\times50$ matrices
 in our dataset preparation. While we received some promising results, it is possible 
 that the first approach makes the data too coarse and the second too noisy. Another
-alternative could be generating daily averages and combining them into $512x31$ (largest number of days in a month)
+alternative could be generating daily averages and combining them into $512\times31$ (largest number of days in a month)
 matrices. This could potentially be more sensitive to the signal than the monthly averages
 and less noisy than article level samples.
 
