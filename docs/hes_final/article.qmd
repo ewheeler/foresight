@@ -85,11 +85,10 @@ In order to elevate text data to the center-stage of our prediction efforts, we 
 We explored two approaches for extracting conflict signals from text embeddings. In the first approach we used a fit-in-memory dataset of monthly embedding averages per country per month and applied statistical classification models such as K Nearest Neighbors and XGBoost. In the second approach we stacked multiple article-level embeddings and applied Transformer-based models to extract a signal directly from the text corpus. See the figures (X, Y) for details of both methods.
 
 ### Defining Conflict Escalation
-Our task of modeling conflict escalation required a precise definition of what conflict escalation is. We began with raw event and casualty counts from The [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/) , whose team of researchers monitor thousands of sources in 20 languages to generate a dataset containing monthly totals of conflict events and their related fatalities [@doi:10.1177/0022343310378914]. ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, and protests.
+Our task of modeling conflict escalation required a precise definition of what conflict escalation is. We began with raw event and casualty counts from The [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/), whose team of researchers monitor thousands of sources in 20 languages to generate a dataset containing monthly totals of conflict events and their related fatalities [@doi:10.1177/0022343310378914]. ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, and protests.
 With these totals in-hand, we needed to create a target to label our training data. Prior work has treated this as a binary classification task, asking whether or not conflict escalated in a given month, and we adopt this approach as well. [@10.1093/jeea/jvac025]
 In contrast to prior work, however, we do not treat the simple presence of a fatality due to conflict as sufficient to indicate conflict escalation. To achieve our objective of creating a generalizable conflict model, we required a metric that was consistent across varying local conditions. Small changes in the absolute number of monthly fatalities can have widely different implications depending on the country and time period. 
 To address this, we derived a metric designed to highlight relative “spikes” in political violence. Calculating whether a spike occurred in a given month is a two-step process. First, we calculated the trend in violence for a given month, defined by the slope of an ordinary least squares regression of the number of ACLED-documented fatalities that occurred in the target month, and the preceding two months. This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any given time. Next, we calculated whether that slope was in the $75^{th}$ percentile of such slopes in the target country for the preceding two years. This produced a binary metric that is sensitive to small increases in political violence in peaceful countries, while also filtering out small fluctuations in long-standing conflicts.
-
 
 ### News Content Data
 
@@ -99,7 +98,6 @@ The GDELT Dataset has been used for a wide variety of research purposes, includi
 
 While many of GDELT’s databases reflect news articles from 1 January 1979 onward, GDELT’s news article embeddings exist only from 1 January 2020, limiting the time period for which training data can be drawn. Availability of ACLED’s monthly event and fatality totals varies by country, but event and fatality totals are available for all countries since at least 1 January 2020.
 Our training data was derived from these GDELT and ACLED data. GDELT news article embeddings served as our independent variable, while the “spike” metric derived from ACLED’s conflict data served as our target variable. Hard dates were set for train, test, and validation splits, and none of our models saw data published after October 2022 during training, with the remaining months used for testing and validation.
-
 
 ```{mermaid}
 %%| fig-width: 3
@@ -179,7 +177,7 @@ flowchart TD
 
 ## Feed Forward Neural Network
 
-Our third approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
+Our third approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner [@sainburg2021parametric]. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
 
 ![Distribution of supervised UMAP reduction to 2 dimensions](imgs/fig-umap2d-jointplot.png){width=50%}
 
@@ -208,7 +206,6 @@ flowchart TD
     Context[Country context indicators] --> FFNN
 ```
 
-
 ## Results
 
 We evaluated our models with both a research and a practical objectives in mind.
@@ -226,7 +223,6 @@ conflict escalation using publicly available text embeddings. We looked at the a
 
 Further investigation showed that while overall numeric metrics look similar, the Transformer-based model generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the
 generalizability is a significant reason to prefer Transformer architecture and resampled dataset.
-
 
 ![Transformer model Predictions on test data](imgs/fig-transformer-test-predictions.png){width=55%}
 
