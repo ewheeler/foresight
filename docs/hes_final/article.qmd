@@ -98,8 +98,11 @@ The [Global Database of Events Language and Tone (GDELT) Project](https://www.gd
 
 The GDELT Dataset has been used for a wide variety of research purposes, including for conflict prediction [@DBLP:conf/sac/ChenJY20]. While we believed this to be the best dataset available for our purposes, prior research has revealed some limitations that we must consider. GDELT’s coverage overrepresents the western world, particularly the United States and Europe. GDELT does represent Russia, India and China better than other event datasets, but it continues to underrepresent other parts of the world, particularly the global south. English is the most common language in the GDELT dataset, comprising more than 40% of the articles in its corpus [@Kwak_An_2021].
 
+### Training Dataset
+
 While many of GDELT’s databases reflect news articles from 1 January 1979 onward, GDELT’s news article embeddings exist only from 1 January 2020, limiting the time period for which training data can be drawn. Availability of ACLED’s monthly event and fatality totals varies by country, but event and fatality totals are available for all countries since at least 1 January 2020.
-Our training data was derived from these GDELT and ACLED data. GDELT news article embeddings served as our independent variable, while the “spike” metric derived from ACLED’s conflict data served as our target variable. Hard dates were set for train, test, and validation splits, and none of our models saw data published after October 2022 during training, with the remaining months used for testing and validation.
+
+Our training data was derived from these GDELT and ACLED data. GDELT news article embeddings served as our independent variable, while the “spike” metric derived from ACLED’s conflict data served as our target variable. The spike metric was used to label article data on a three-month time lag, allowing us to make predictions of future events. Hard dates were set for train, test, and validation splits, and none of our models saw data published after October 2022 during training, with the remaining months used for testing and validation.
 
 ```{mermaid}
 %%| fig-width: 3
@@ -116,37 +119,9 @@ flowchart TD
     GDELT --> Data(Time-partitioned train, val, & test datasets)
     Spike --> Data
 ```
+## Conflict Prediction Using Text and Country Features
 
-### Statistical model using monthly embedding averages
-
-In this approach we prepared the dataset by averaging the embeddings per country per month. We also included one-hot encoded columns for countries. Since we only had access to embeddings starting in January 2020, the total length of this dataset was just a little over 6,000 samples (training, validation, and test sets combined). Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from “curse of dimensionality”. This was handled by performing Principal Component Analysis – we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance. Another issue was a class imbalance – conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
-
-The model used in this approach is a stacked model that averages probabilities independently predicted by a K Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
-
-```{mermaid}
-%%| fig-width: 3
-%%| fig-height: 5
-%%| fig-cap: Fig 2. Statistical model architecture
-flowchart TD
-    GDELT[GDELT Embeddings] -->|average by country by month| AGG(Monthly news representation)
-    Countries[Country labels] -->|one-hot encoding| AGG
-
-    AGG -->|PCA| PCA(169 dimension representation)
-    PCA --> KNN{KNN}
-    PCA --> XGD{XGBoost}
-
-    XGD --> AVG{Mean}
-    KNN --> AVG
-    AVG --> Pred(Prediction of conflict escalation in 3 months)
-
-    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
-    Spike(Conflict response\n binary variable) --> XGD
-    Spike --> KNN
-```
-
-## Feed Forward Neural Network
-
-Our second approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner [@sainburg2021parametric]. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
+Our first approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner [@sainburg2021parametric]. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
 
 ![Distribution of supervised UMAP reduction to 2 dimensions](imgs/fig-umap2d-jointplot.png){width=50%}
 
@@ -175,7 +150,34 @@ flowchart TD
     Context[Country context indicators] --> FFNN
 ```
 
-### Transformer Model using Resampled Embeddings
+### Conflict Prediction Using Text and Country Labels
+
+In this approach we prepared the dataset by averaging the embeddings per country per month. We also included one-hot encoded columns for countries. Since we only had access to embeddings starting in January 2020, the total length of this dataset was just a little over 6,000 samples (training, validation, and test sets combined). Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from “curse of dimensionality”. This was handled by performing Principal Component Analysis – we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance. Another issue was a class imbalance – conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
+
+The model used in this approach is a stacked model that averages probabilities independently predicted by a K Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
+
+```{mermaid}
+%%| fig-width: 3
+%%| fig-height: 5
+%%| fig-cap: Fig 2. Statistical model architecture
+flowchart TD
+    GDELT[GDELT Embeddings] -->|average by country by month| AGG(Monthly news representation)
+    Countries[Country labels] -->|one-hot encoding| AGG
+
+    AGG -->|PCA| PCA(169 dimension representation)
+    PCA --> KNN{KNN}
+    PCA --> XGD{XGBoost}
+
+    XGD --> AVG{Mean}
+    KNN --> AVG
+    AVG --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response\n binary variable) --> XGD
+    Spike --> KNN
+```
+
+### Conflict Prediction Using Text Alone
 
 Our third approach used a pair of transformer models to extract information directly from the GDELT embedding corpus.[@vaswani2017attention] Architecturally, both models are encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
 
