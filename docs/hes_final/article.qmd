@@ -221,9 +221,9 @@ We evaluated our models with both a research and a practical objectives in mind.
 From a research perspective we were interested in feasibility of making accurate and generalizable predictions of
 conflict escalation using publicly available text embeddings. We looked at the area under the ROC curve, F1 score, precision, recall and confusion matrix to design a holistic evaluation method at both fine-tuning/validation stage and final test set prediction stage. Despite conceptual differences in dataset creation and modeling techniques, both of the described above approaches produced comparative results. 
 
-![Model performance metrics](imgs/tbl-best-max-metrics.png){width=50%}
+![Model performance metrics (higher values are better)](imgs/tbl-best-max-metrics.png){width=50%}
 
-![Model performance metrics](imgs/tbl-best-min-metrics.png){width=50%}
+![Model performance metrics (lower values are better)](imgs/tbl-best-min-metrics.png){width=50%}
 
 ![Receiver Operator Characteristics](imgs/fig-roc.png){width=50%}
 
