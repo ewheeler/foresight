@@ -119,7 +119,7 @@ flowchart TD
     GDELT --> Data(Time-partitioned train, val, & test datasets)
     Spike --> Data
 ```
-## Conflict Prediction Using Text and Country Features
+### Conflict Prediction Using Text and Country Features
 
 Our first approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner [@sainburg2021parametric]. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
 
@@ -152,7 +152,7 @@ flowchart TD
 
 ### Conflict Prediction Using Text and Country Labels
 
-In this approach we prepared the dataset by averaging the embeddings per country per month. We also included one-hot encoded columns for countries. Since we only had access to embeddings starting in January 2020, the total length of this dataset was just a little over 6,000 samples (training, validation, and test sets combined). Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from “curse of dimensionality”. This was handled by performing Principal Component Analysis – we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance. Another issue was a class imbalance – conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
+In this approach we prepared the dataset by averaging the embeddings per country per month. We also included one-hot encoded columns for countries, but no other country features were added. Since we only had access to embeddings starting in January 2020, the total length of this dataset was just a little over 6,000 samples (training, validation, and test sets combined). Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from “curse of dimensionality”. This was handled by performing Principal Component Analysis – we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance. Another issue was a class imbalance – conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
 
 The model used in this approach is a stacked model that averages probabilities independently predicted by a K Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
 
@@ -185,12 +185,12 @@ The purpose of the encoder was to reduce the dimensionality of the embedding cor
 
 To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
 
-This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive les, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
+This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
 
 ![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){width=50%}
 
 With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target.
-In contrast to our statistical modeling approach, the transformer models are trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
+In contrast to our earlier approaches, the dual-transformer model was trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
 
 ```{mermaid}
 %%| fig-width: 3
