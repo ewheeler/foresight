@@ -144,41 +144,9 @@ flowchart TD
     Spike --> KNN
 ```
 
-### Transformer Model using Resampled Embeddings
-
-Our second approach used a pair of transformer models to extract information directly from the GDELT embedding corpus.[@vaswani2017attention] Architecturally, both models are encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
-
-The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. The classifier could then be used to make final predictions on the resulting distilled dataset.
-
-To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
-
-This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive les, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
-
-With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target.
-In contrast to our statistical modeling approach, the transformer models are trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
-
-```{mermaid}
-%%| fig-width: 3
-%%| fig-height: 5
-%%| fig-cap: Fig 3. Transformer model architecture
-flowchart TD
-    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
-
-    Articles --> Trans1{Encoder\n transformer}
-    Trans1 -->|classifier head present during training| Compact(16 dimension representations)
-
-    Compact --> Trans2{Binary\n classifier\n transformer}
-    Trans2 --> Pred(Prediction of conflict escalation in 3 months)
-
-    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
-    Spike(Conflict response\n binary variable) --> Trans2
-
-    Spike -->|included during model training| Trans1
-```
-
 ## Feed Forward Neural Network
 
-Our third approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner [@sainburg2021parametric]. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
+Our second approach employed a feed forward neural network model. Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner [@sainburg2021parametric]. Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. The fit UMAP model, was applied to the validation and test data without supervision. These reduced, 128 dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
 
 ![Distribution of supervised UMAP reduction to 2 dimensions](imgs/fig-umap2d-jointplot.png){width=50%}
 
@@ -207,6 +175,37 @@ flowchart TD
     Context[Country context indicators] --> FFNN
 ```
 
+### Transformer Model using Resampled Embeddings
+
+Our third approach used a pair of transformer models to extract information directly from the GDELT embedding corpus.[@vaswani2017attention] Architecturally, both models are encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
+
+The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. The classifier could then be used to make final predictions on the resulting distilled dataset.
+
+To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
+
+This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive les, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
+
+With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target.
+In contrast to our statistical modeling approach, the transformer models are trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
+
+```{mermaid}
+%%| fig-width: 3
+%%| fig-height: 5
+%%| fig-cap: Fig 3. Transformer model architecture
+flowchart TD
+    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
+
+    Articles --> Trans1{Encoder\n transformer}
+    Trans1 -->|classifier head present during training| Compact(16 dimension representations)
+
+    Compact --> Trans2{Binary\n classifier\n transformer}
+    Trans2 --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response\n binary variable) --> Trans2
+
+    Spike -->|included during model training| Trans1
+```
 ## Results
 
 We evaluated our models with both a research and a practical objectives in mind.
