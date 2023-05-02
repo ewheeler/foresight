@@ -15,6 +15,11 @@ format:
   pdf:
     classoption:
     - twocolumn
+    margin-left: 25mm
+    margin-right: 25mm
+    margin-top: 25mm
+    margin-bottom: 25mm
+    whitespace: medium
 bibliography: bibliography.bibtex
 # https://github.com/quarto-dev/quarto-cli/discussions/2786
 include-in-header:
@@ -48,6 +53,7 @@ include-before-body:
       \exhyphenpenalty=100
       \righthyphenmin=4
       \lefthyphenmin=5
+      \setlength{\belowcaptionskip}{-5pt}
 embed-resources: true
 notebook-links: false
 title-block-banner: true
@@ -55,7 +61,6 @@ abstract: |
   The task of forecasting conflict escalation is of great interest to policy makers, executives, and social scientists. In this article, we propose a novel, text-first approach to computational conflict prediction using contemporary natural language processing and machine learning techniques. We outline three methods to extract generalizable conflict signals directly from a corpus of ofer 2.5 million document embeddings derived from publicly available news sources. The first uses text data enriched by country context features, the second uses text data conditioned only on the country label itself, and the third extracts a signal from the text alone, with no additional country or region-specific features. We demonstrate that usable conflict signals can be extracted directly from text sources, and we outline potential avenues for further research that we believe may yield models that can provide early warnings to decision makers to facilitate strategic planning, resource allocation, and disaster mitigation. 
 
 ---
-
 ## Introduction
 
 ### Motivation
@@ -72,6 +77,7 @@ Predicting conflict has long been of interest to researchers and practitioners o
 Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict. This introduces a “small-data problem” where relatively few observations of conflict are available for a given country [@RePEc:cam:camdae:2220]. Some efforts have been made to overcome this by building generalizable models that can theoretically be used to make predictions on any country [@wen2023transformers]. We followed the latter approach in developing our model, hypothesizing that the larger number of observations available to a global model will allow it to extract more generalizable signals of conflict, and that such a model will be better able to predict unforeseen risks in countries with little available training data.
 
 ## Methodology
+
 The principal difference between our approach and that of prior work is in our choice of predictive features, which we extract directly from text embeddings of publicly available news coverage. While newspaper and media content has been used in conflict prediction models before, it is generally only included as a supplement to models that primarily rely on other features. Despite this, models that include text features have been shown to outperform equivalent models that do not [@RePEc:cam:camdae:2220]. 
 
 In contrast, our approach is text-first, making predictions primarily or exclusively from text, with few or no other features added. To the best of our knowledge, no conflict prediction model described in the literature makes use of text embeddings. Previous efforts have included statistical analysis of text, and unsupervised Latent Dirichlet Allocation (LDA) for topic extraction [@RePEc:cam:camdae:2220]. These approaches to Natural Language Processing (NLP) have relegated text data to a peripheral role in conflict prediction. 
@@ -131,7 +137,7 @@ Country context inputs consisted of two numerical indicators ('Under-five mortal
 
 ```{mermaid}
 %%| fig-width: 3
-%%| fig-height: 5
+%%| fig-height: 3
 %%| fig-cap: Fig 6. Feed forward neural network model architecture
 flowchart TD
     GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
@@ -149,7 +155,6 @@ flowchart TD
 
     Context[Country context indicators] --> FFNN
 ```
-
 ### Conflict Prediction Using Text and Country Labels
 
 In this approach we prepared the dataset by averaging the embeddings per country per month. We also included one-hot encoded columns for countries, but no other country features were added. Since we only had access to embeddings starting in January 2020, the total length of this dataset was just a little over 6,000 samples (training, validation, and test sets combined). Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from “curse of dimensionality”. This was handled by performing Principal Component Analysis – we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance. Another issue was a class imbalance – conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
@@ -158,7 +163,7 @@ The model used in this approach is a stacked model that averages probabilities i
 
 ```{mermaid}
 %%| fig-width: 3
-%%| fig-height: 5
+%%| fig-height: 3
 %%| fig-cap: Fig 2. Statistical model architecture
 flowchart TD
     GDELT[GDELT Embeddings] -->|average by country by month| AGG(Monthly news representation)
@@ -176,7 +181,6 @@ flowchart TD
     Spike(Conflict response\n binary variable) --> XGD
     Spike --> KNN
 ```
-
 ### Conflict Prediction Using Text Alone
 
 Our third approach used a pair of transformer models to extract information directly from the GDELT embedding corpus.[@vaswani2017attention] Architecturally, both models are encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
@@ -185,7 +189,7 @@ The purpose of the encoder was to reduce the dimensionality of the embedding cor
 
 To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
 
-This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
+This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage
 
 ![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){width=50%}
 
@@ -194,7 +198,7 @@ In contrast to our earlier approaches, the dual-transformer model was trained pu
 
 ```{mermaid}
 %%| fig-width: 3
-%%| fig-height: 5
+%%| fig-height: 3
 %%| fig-cap: Fig 3. Transformer model architecture
 flowchart TD
     GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
