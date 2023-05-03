@@ -87,6 +87,7 @@ In order to elevate text data to the center-stage of our prediction efforts, we 
 We developed two approaches for extracting conflict signals from text embeddings. In the first approach we used a fit-in-memory dataset of monthly embedding averages per country per month and applied statistical classification models such as K Nearest Neighbors and XGBoost. In the second approach we stacked multiple article-level embeddings and applied Transformer-based models to extract a signal directly from the text corpus. See the figures (X, Y) for details of both methods.
 
 ### Defining Conflict Escalation
+
 Our task of modeling conflict escalation required a precise definition of what conflict escalation is. We began with raw event and casualty counts from The [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/), whose team of researchers monitor thousands of sources in 20 languages to generate a dataset containing monthly totals of conflict events and their related fatalities [@doi:10.1177/0022343310378914]. ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, and protests.
 With these totals in-hand, we needed to create a target to label our training data. Prior work has treated this as a binary classification task, asking whether or not conflict escalated in a given month, and we adopt this approach as well. [@10.1093/jeea/jvac025]
 
@@ -106,9 +107,9 @@ The GDELT Dataset has been used for a wide variety of research purposes, includi
 
 ### Training Dataset
 
-While many of GDELT’s databases reflect news articles from 1 January 1979 onward, GDELT’s news article embeddings exist only from 1 January 2020, limiting the time period for which training data can be drawn. Availability of ACLED’s monthly event and fatality totals varies by country, but event and fatality totals are available for all countries since at least 1 January 2020.
+Our training data was derived from these GDELT and ACLED datasets. GDELT news article embeddings served as our independent variable, while the “spike” metric derived from ACLED’s conflict data served as our target variable. The spike metric was used to label article data on a three-month time lag, allowing us to make predictions of future events.
 
-Our training data was derived from these GDELT and ACLED data. GDELT news article embeddings served as our independent variable, while the “spike” metric derived from ACLED’s conflict data served as our target variable. The spike metric was used to label article data on a three-month time lag, allowing us to make predictions of future events. Hard dates were set for train, test, and validation splits, and none of our models saw data published after October 2022 during training, with the remaining months used for testing and validation.
+ GDELT’s news article embeddings exist only from 1 January 2020, limiting the time period for which training data can be drawn. Availability of ACLED’s monthly event and fatality totals varies by country, but event and fatality totals are available for all countries since at least 1 January 2020. Our training dataset thus ran from January 2020 through October 2022. Data from November 2022 through March 2023 was used for model validation and testing.
 
 ```{mermaid}
 %%| fig-width: 3
@@ -187,17 +188,8 @@ Our third approach used a pair of transformer models to extract information dire
 
 The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. The classifier could then be used to make final predictions on the resulting distilled dataset.
 
-To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
-
-This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage
-
-![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){width=50%}
-
-With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target.
-In contrast to our earlier approaches, the dual-transformer model was trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
-
 ```{mermaid}
-%%| fig-width: 3
+%%| fig-width: 5
 %%| fig-height: 3
 %%| fig-cap: Fig 3. Transformer model architecture
 flowchart TD
@@ -214,6 +206,17 @@ flowchart TD
 
     Spike -->|included during model training| Trans1
 ```
+
+To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
+
+This new dataset offered major advantages in combatting the curse of dimensionality, however, it also represented a distorted view of the world, which overrepresents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, this dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage
+
+![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){width=50%}
+
+With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices. Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector. Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target.
+In contrast to our earlier approaches, the dual-transformer model was trained purely on text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
+
+
 ## Results
 
 We evaluated our models with both a research and a practical objectives in mind.
@@ -288,6 +291,8 @@ Building a more robust and automated data processing pipeline is another importa
 designing either a batch or streaming system that can reliably collect data, preprocess
 and aggregate it into required format, train the model and make predictions. The system should handle 
 computational resources and cost constraints.
+
+{{< pagebreak >}}
 
 ## References
 
