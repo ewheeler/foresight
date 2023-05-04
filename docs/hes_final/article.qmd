@@ -239,7 +239,9 @@ Transformer model architecture
 
 ## Results
 
-We evaluated the models against a set of common performance metrics (see @tbl-best-max-metrics, @tbl-best-min-metrics, @fig-roc, @fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
+We evaluated the models against a set of common performance metrics (see @fig-best-max-metrics, @fig-best-min-metrics, @fig-roc, 
+@fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches 
+produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
 
 Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presense or absense of any armed conflict related fatality as their binary target [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
 
@@ -247,32 +249,13 @@ We assume that UNICEF decision makers would appreciate a tool that flags all pot
 
 \onecolumn
 
-::: {layout="[[1], [1]]"}
+::: {layout="[[1, 1]]"}
 
-| metric               |   FFNN |   XGBoost |   Transformer |
-|:---------------------|-------:|----------:|--------------:|
-| False Discovery Rate |   0.73 |      0.83 |          0.80 |
-| False Negative Rate  |   0.59 |      0.28 |          0.53 |
-| False Positive Rate  |   0.19 |      0.51 |          0.30 |
+![Model performance metrics (larger values are better)](imgs/fig-best-max-metrics.png){#fig-best-max-metrics}
 
-: Model performance metrics (smaller values are better) {#tbl-best-min-metrics}
-
-
-| metric             |   FFNN |   XGBoost |   Transformer |
-|:-------------------|-------:|----------:|--------------:|
-| Cohen Kappa Score  |   0.18 |      0.09 |          0.11 |
-| F1 Score           |   0.33 |      0.28 |          0.28 |
-| Precision Score    |   0.27 |      0.17 |          0.20 |
-| Recall Score       |   0.41 |      0.72 |          0.47 |
-| Roc Auc Score      |   0.67 |      0.69 |          0.64 |
-| True Negative Rate |   0.81 |      0.49 |          0.70 |
-
-: Model performance metrics (larger values are better) {#tbl-best-max-metrics}
+![Model performance metrics (smaller values are better)](imgs/fig-best-min-metrics.png){#fig-best-min-metrics}
 
 :::
-\twocolumn
-
-\onecolumn
 
 ::: {layout="[[1, 1]]"}
 
