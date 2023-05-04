@@ -313,22 +313,33 @@ with additional country data ranking best on one and worst on the other and the 
 :::
 \twocolumn
 
-Further investigation showed that while overall numeric metrics look similar and there seems to be a slight performance advantage in using country data in addition to text features, the Transformer-based text-only model generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the generalizability is a significant reason to prefer Transformer architecture and resampled dataset.
+Further investigation showed that while overall numeric metrics look similar, the Transformer-based text-only model generalized better 
+across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the 
+generalizability could be a reason to prefer Transformer architecture and resampled dataset.
 
 While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a 
 model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model 
 evaluation. Average embeddings dataset and the corresponding statistical model fit in memory while working with article level embeddings 
 in two other proposed methods requires additional data engineering steps to be processed in batches.
 
-We think that all three approaches produced promising results and the model choice depends on the user's goals, performance metrics and available resources.
+We think that all three approaches produced promising results and the model choice depends on the user's goals, selected performance 
+metrics and available resources.
 
 ## Conclusions
 
 In this work we explored the possibility of predicting future geo-political conflict escalation at a country level using a global 
-collection of news publications. We explored different ways of aggregating the data and applied both statistical machine learning and 
-deep learning models. The results suggest that text embeddings provide a strong enough signal to make such predictions. Different data 
-sampling and modeling approaches produce comparable results based on common metrics. Transformer-based model generalizes better across 
-geographies while statistical model provides a size/cost of deployment advantage.
+collection of news publications. We compared the usage of text-only data and data enriched with country labels and metadata. We 
+experimented with different ways of aggregating the data and applied both statistical machine learning and deep learning models. The 
+results suggest that text embeddings provide a strong enough signal to make such predictions. Different data 
+sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common
+numetic metrics. Transformer-based model generalized better across geographies while statistical model provided a size/cost of 
+deployment advantage. 
+
+While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such 
+predictions from primarily text data. We provided a clear definition of a binary conflict escalation target and described several 
+approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science 
+research. The performance results can serve as a benchmark for future research projects in this 
+field. We outline some ideas for future work in the next section.
 
 ## Future work
 
@@ -336,17 +347,28 @@ We foresee several ways to extend this work, and there are exciting opportunitie
 
 ### Future research directions
 
-One of the potential research extensions of this work is to continue experimenting with data sampling and aggregation approaches. We used either monthly averages to create $512\times1$ vectors or article level samples to create $512\times50$ matrices in our dataset preparation. While we received some promising results, it is possible that the first approach makes the data too coarse and the second too noisy. Another alternative could be generating daily averages and combining them into $512\times31$ (largest number of days in a month) matrices. This could potentially be more sensitive to the signal than the monthly averages and less noisy than article level samples.
+One of the potential research extensions of this work is to continue experimenting with data sampling and aggregation approaches. There 
+are many alternatives to the approaches described above, for instance generating daily averages and combining them into $512\times31$ 
+(largest number of days in a month) matrices. This could potentially be more sensitive to the signal than the monthly averages and less 
+noisy than article level samples.
 
-The transformer models have a great deal of room for hyperparameter tuning. Further experimentation with the size of the encoder output, the number of articles per training sample, and implementing overlapping strides during distillation could all improve the downstream performance of the classifier. It may also be possible to use the output of the encoder as input to some other classification model architecture. 
+The transformer models have a great deal of room for hyperparameter tuning. Further experimentation with the size of the encoder output, 
+the number of articles per training sample, and implementing overlapping strides during distillation could all improve the downstream 
+performance of the classifier. It may also be possible to use the output of the encoder as input to some other classification model 
+architecture. 
 
 Finally, due to time and resource constraints in this project we used 20% subset of daily news articles. Increasing that percentage could potentially lead to better results.
 
 ### Future practical directions
 
-Building an application with a user interface could be a natural extension of this work. We envision a dashboard where a user can view a world map where countries are heatmap colored according to the estimated probability of escalating conflict. Countries with highest risk can be flagged or shown to a user in a separate view. In addition to the visual part of this application it is important to ensure that the model is deployed and can receive new data input and make inference.
+Building an application with a user interface could be a natural extension of this work. We envision a dashboard where a user can view a 
+world map where countries are heatmap colored according to the estimated probability of escalating conflict. Countries with highest risk 
+can be flagged or shown to a user in a separate view. In addition to the visual part of this application, model deployment for easy
+inference is an important project.
 
-Building a more robust and automated data processing pipeline is another important direction. This would involve designing either a batch or streaming system that can reliably collect data, preprocess and aggregate it into required format, train the model and make predictions. The system should handle computational resources and cost constraints.
+Building a more robust and automated data processing pipeline is another important direction. This would involve designing either a 
+batch or streaming system that can reliably collect data, preprocess and aggregate it into required format, train the model and make 
+predictions. The system should handle computational resources and cost constraints.
 
 {{< pagebreak >}}
 
