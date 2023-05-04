@@ -115,7 +115,7 @@ To address this, we derived a metric designed to highlight relative “spikes”
 
 The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world [@leetaru2013gdelt]. With updates every fifteen minutes, GDELT’s Event Database documents physical events such as diplomatic interactions, social unrest, and military action. Approximately 60 attributes are assigned to each event from GDELT’s processing and analysis, including named entities involved, geolocation details, categorization among 300 event types, as well as metrics related to average ‘tone’ of articles about the event and potential severity of event impact. In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512-dimension document-level embeddings of their scraped news articles using the Universal Sentence Encoder [@gdeltgsg] [@cer2018universal].
 
-The GDELT Dataset has been used for a wide variety of research purposes, including for conflict prediction [@DBLP:conf/sac/ChenJY20]. While we believed this to be the best dataset available for our purposes, prior research has revealed some limitations that we must consider. GDELT’s coverage overrepresents the western world, particularly the United States and Europe. GDELT does represent Russia, India and China better than other event datasets, but it continues to underrepresent other parts of the world, particularly the global south. English is the most common language in the GDELT dataset, comprising more than 40% of the articles in its corpus [@Kwak_An_2021].
+The GDELT Dataset has been used for a wide variety of research purposes, including for conflict prediction [@DBLP:conf/sac/ChenJY20]. While we believed this to be the best dataset available for our purposes, prior research has revealed some limitations that we must consider. GDELT’s coverage over-represents the western world, particularly the United States and Europe. GDELT does represent Russia, India and China better than other event datasets, but it continues to underrepresent other parts of the world, particularly the global south. English is the most common language in the GDELT dataset, comprising more than 40% of the articles in its corpus [@Kwak_An_2021].
 
 ### Training Dataset
 
@@ -128,7 +128,7 @@ Our training data was derived from these GDELT and ACLED datasets. GDELT news ar
 %%| fig-width: 3
 %%| fig-height: 5
 flowchart TD
-    GSG[GDELT Global Similarty Graph] -->|sample 20% of daily files| Merge{Merge on article URL,\n select relevant features}
+    GSG[GDELT Global Similarity Graph] -->|sample 20% of daily files| Merge{Merge on article URL,\n select relevant features}
     GKG[GDELT Global Knowledge Graph] -->|sample 20% of daily files| Merge
 
     Merge --> GDELT(GDELT dataset)
@@ -209,7 +209,7 @@ The purpose of the encoder was to reduce the dimensionality of the embedding cor
 
 To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country. Each of these matrices was then split into several random subsamples of 50 articles each. Samples for countries in which $n<50$ were padded to $512\times50$. This process had two effects on training. First, by limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample. Simultaneously, by splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
 
-This new dataset offered major advantages in combatting the curse of dimensionality, however, it also presented a distorted view of the world which overrepresents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, the dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
+This new dataset offered major advantages in combatting the curse of dimensionality, however, it also presented a distorted view of the world which over-represents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. Despite this limitation, the dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. The output of these 16 neurons would be used in the classification stage.
 
 ![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){#fig-transformer-viz}
 
@@ -244,7 +244,7 @@ We evaluated the models against a set of common performance metrics (see @fig-be
 
 ![Model metrics (large values are better)](imgs/fig-best-max-metrics.png){#fig-best-max-metrics}
 
-Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presense or absense of any armed conflict related fatality as their binary target [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
+Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presence or absence of any armed conflict related fatality as their binary target [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
 
 ![Receiver Operator Characteristics](imgs/fig-roc.png){#fig-roc}
 
@@ -261,9 +261,9 @@ Further investigation showed that while overall numeric metrics look similar, di
 We think that all three approaches produced promising results and the model choice depends on the user's goals, selected performance metrics and available resources.
 
 ## Ethical Considerations
-This work carries significant ethical considerations, especially if it were to be operationalized. The first and most apparent is bias in the training data. All of our models showed varying performance by region, and overreliance on such models by decision makers could lead to resources being diverted away from regions that need them, but which were underrepresented in the training data and thus had less accurate results. 
+This work carries significant ethical considerations, especially if it were to be operationalized. The first and most apparent is bias in the training data. All of our models showed varying performance by region, and over-reliance on such models by decision makers could lead to resources being diverted away from regions that need them, but which were underrepresented in the training data and thus had less accurate results. 
 
-If models like these were to become widely used, they may be vulnerable to adversarial attacks. Large volumes of fake news content could be used to overwhelm the true signal from news articles to obscure the intentions of malicious actors, or to cause panic. Finally, and perhaps most concerningly, is the potential for conflict prediction models to deliver self-fulfilling prophesies. If policy makers become convinced of impending conflict in their own or neighboring countries because of the predictions of an AI model, they may take actions that make conflict more likely. 
+If models like these were to become widely used, they may be vulnerable to adversarial attacks. Large volumes of fake news content could be used to overwhelm the true signal from news articles to obscure the intentions of malicious actors, or to cause panic. Finally, and perhaps most concerning, is the potential for conflict prediction models to deliver self-fulfilling prophesies. If policy makers become convinced of impending conflict in their own or neighboring countries because of the predictions of an AI model, they may take actions that make conflict more likely. 
 
 Reducing these risks requires emphasizing that these are models, not oracles. They are measuring the temperature of the global media conversation, not gazing into the future. Decision makers need to understand that though models like these can be useful tools, they are not a substitute for careful deliberation and dialogue. At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong. 
 
@@ -280,7 +280,7 @@ Finally, we believe deeper research into regional disparities in model performan
 
 ### Future practical directions
 
-Building an application with a user interface could be a natural extension of this work. We envision a dashboard where a user can view a world map where countries are heatmap colored according to the estimated probability of escalating conflict. Countries with highest risk can be flagged or shown to a user in a separate view. In addition to the visual part of this application, model deployment for easy inference is an important project.
+Building an application with a user interface could be a natural extension of this work. We envision a dashboard where a user can view a world map where countries are colored according to the estimated probability of escalating conflict. Countries with highest risk can be flagged or shown to a user in a separate view. In addition to the visual part of this application, model deployment for easy inference is an important project.
 
 Building a more robust and automated data processing pipeline is another important direction. This would involve designing either a batch or streaming system that can reliably collect data, preprocess and aggregate it into required format, train the model and make predictions. The system should handle computational resources and cost constraints.
 
