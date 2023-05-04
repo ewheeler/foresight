@@ -304,23 +304,8 @@ in two other proposed methods requires additional data engineering steps to be p
 We think that all three approaches produced promising results and the model choice depends on the user's goals, selected performance 
 metrics and available resources.
 
-## Conclusions
 
-In this work we explored the possibility of predicting future geo-political conflict escalation at a country level using a global 
-collection of news publications. We compared the usage of text-only data and data enriched with country labels and metadata. We 
-experimented with different ways of aggregating the data and applied both statistical machine learning and deep learning models. The 
-results suggest that text embeddings provide a strong enough signal to make such predictions. Different data 
-sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common
-numetic metrics. Transformer-based model generalized better across geographies while statistical model provided a size/cost of 
-deployment advantage. 
-
-While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such 
-predictions from primarily text data. We provided a clear definition of a binary conflict escalation target and described several 
-approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science 
-research. The performance results can serve as a benchmark for future research projects in this 
-field. We outline some ideas for future work in the next section.
-
-### Ethical Considerations
+## Ethical Considerations
 This work carries significant ethical considerations, especially if it were to be operationalized. The first and most apparent is bias in the training data. All of our models showed varying performance by region, and overreliance on such models by decisionmakers could lead to resources being diverted away from regions that need them, but which were underrepresented in the training data and thus had less accurate results. 
 
 If models like these were to become widely used, they may be vulnerable to adversarial attacks. Large volumes of fake news content could be used to overwhelm the true signal of the model, obscuring the intentions of malicious actors, or causing panic.
@@ -334,17 +319,10 @@ We foresee several ways to extend this work, and there are exciting opportunitie
 
 ### Future research directions
 
-One of the potential research extensions of this work is to continue experimenting with data sampling and aggregation approaches. There 
-are many alternatives to the approaches described above, for instance generating daily averages and combining them into $512\times31$ 
-(largest number of days in a month) matrices. This could potentially be more sensitive to the signal than the monthly averages and less 
-noisy than article level samples.
+Due to time and resource constraints, our work used only 20% of the daily embeddings available through  GDELT, and future research could focus on scaling the methods outline. We also believe that continued experimentation with data sampling and aggregation approaches, as well as model tuning, could yield models that outperform those outlined here without additional data. 
 
-The transformer models have a great deal of room for hyperparameter tuning. Further experimentation with the size of the encoder output, 
-the number of articles per training sample, and implementing overlapping strides during distillation could all improve the downstream 
-performance of the classifier. It may also be possible to use the output of the encoder as input to some other classification model 
-architecture. 
+Finally, we believe deeper research into regional disparities in model performance is needed. Understanding the limitations of global media coverage for conflict prediction will be critical to any effort to operationalize this work.
 
-Finally, due to time and resource constraints in this project we used 20% subset of daily news articles. Increasing that percentage could potentially lead to better results.
 
 ### Future practical directions
 
@@ -356,6 +334,25 @@ inference is an important project.
 Building a more robust and automated data processing pipeline is another important direction. This would involve designing either a 
 batch or streaming system that can reliably collect data, preprocess and aggregate it into required format, train the model and make 
 predictions. The system should handle computational resources and cost constraints.
+
+## Conclusions
+
+In this work we explored the possibility of predicting future geo-political conflict escalation at a country level using a global
+collection of news publications. We compared the usage of text-only data and data enriched with country labels and metadata. We
+experimented with different ways of aggregating the data and applied both statistical machine learning and deep learning models. The
+results suggest that text embeddings provide a strong enough signal to make such predictions. Different data
+sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common
+numetic metrics. Transformer-based model generalized better across geographies while statistical model provided a size/cost of
+deployment advantage.
+
+While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such
+predictions from primarily text data. We provided a clear definition of a binary conflict escalation target and described several
+approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science
+research. The performance results can serve as a benchmark for future research projects in this
+field.
+
+
+
 
 {{< pagebreak >}}
 
