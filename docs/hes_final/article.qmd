@@ -22,10 +22,18 @@ format:
     whitespace: medium
     mermaid:
       theme: neutral
+    keep-tex: true
 bibliography: bibliography.bibtex
+template-partials: 
+- title.tex
 # https://github.com/quarto-dev/quarto-cli/discussions/2786
 include-in-header:
   - text: |
+      \usepackage[noblocks]{authblk}
+      \renewcommand*{\Authsep}{, }
+      \renewcommand*{\Authand}{, }
+      \renewcommand*{\Authands}{, }
+      \renewcommand\Affilfont{\small}
       \usepackage{float}
       \makeatletter
       \let\oldlt\longtable
