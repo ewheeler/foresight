@@ -239,46 +239,27 @@ Transformer model architecture
 
 ## Results
 
-We evaluated the models against a set of common performance metrics (see @fig-best-max-metrics, @fig-best-min-metrics, @fig-roc, 
-@fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches 
+We evaluated the models against a set of common performance metrics (see @fig-best-max-metrics, @fig-best-min-metrics, @fig-roc). 
+Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches 
 produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
 
 Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presense or absense of any armed conflict related fatality as their binary target [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
 
 We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
 
-\onecolumn
-
-::: {layout="[[1, 1]]"}
-
 ![Model performance metrics (larger values are better)](imgs/fig-best-max-metrics.png){#fig-best-max-metrics}
 
 ![Model performance metrics (smaller values are better)](imgs/fig-best-min-metrics.png){#fig-best-min-metrics}
 
-:::
-
-::: {layout="[[1, 1]]"}
-
 ![Receiver Operator Characteristics](imgs/fig-roc.png){#fig-roc}
 
-![Precision Recall Curve](imgs/fig-prc.png){#fig-prc}
-
-:::
-::: {layout="[[1, 1]]"}
+Further investigation showed that while overall numeric metrics look similar, the Transformer-based text-only model appeared to generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the generalizability could be a reason to prefer Transformer architecture and resampled dataset.
 
 ![FFNN model accuracy on test data](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy}
 
 ![XGBoost model accuracy on test data](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy}
 
-:::
-::: {layout="[[1, 1]]"}
-
 ![Transformer model accuracy on test data](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy}
-
-:::
-\twocolumn
-
-Further investigation showed that while overall numeric metrics look similar, the Transformer-based text-only model appeared to generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the generalizability could be a reason to prefer Transformer architecture and resampled dataset.
 
 While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embeddings dataset and the corresponding statistical model fit in memory while working with article level embeddings in two other proposed methods requires additional data engineering steps to be processed in batches.
 
