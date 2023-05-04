@@ -248,43 +248,22 @@ with additional country data ranking best on one and worst on the other and the 
 \onecolumn
 
 ::: {layout="[[1, 1]]"}
-| metric               | model       |   value |
-|:---------------------|:------------|--------:|
-| False Discovery Rate | Transformer |    0.80 |
-| False Discovery Rate | XGBoost     |    0.83 |
-| False Discovery Rate | FFNN        |    0.74 |
-| False Negative Rate  | Transformer |    0.53 |
-| False Negative Rate  | XGBoost     |    0.28 |
-| False Negative Rate  | FFNN        |    0.59 |
-| False Positive Rate  | Transformer |    0.30 |
-| False Positive Rate  | XGBoost     |    0.51 |
-| False Positive Rate  | FFNN        |    0.27 |
+| metric               |   FFNN |   XGBoost |   Transformer |
+|:---------------------|-------:|----------:|--------------:|
+| False Discovery Rate |   0.74 |      0.83 |          0.80 |
+| False Negative Rate  |   0.59 |      0.28 |          0.53 |
+| False Positive Rate  |   0.27 |      0.51 |          0.30 |
 
 : Model performance metrics (smaller values are better) {#tbl-best-min-metrics}
 
-| metric             | model       |   value |
-|:-------------------|:------------|--------:|
-| Cohen Kappa Score  | XGBoost     |    0.09 |
-| Cohen Kappa Score  | FFNN        |    0.12 |
-| Cohen Kappa Score  | Transformer |    0.11 |
-| F1 Score           | FFNN        |    0.32 |
-| F1 Score           | XGBoost     |    0.28 |
-| F1 Score           | Transformer |    0.28 |
-| Precision Score    | XGBoost     |    0.17 |
-| Precision Score    | FFNN        |    0.26 |
-| Precision Score    | Transformer |    0.20 |
-| Recall Score       | XGBoost     |    0.72 |
-| Recall Score       | Transformer |    0.47 |
-| Recall Score       | FFNN        |    0.41 |
-| Roc Auc Score      | Transformer |    0.64 |
-| Roc Auc Score      | XGBoost     |    0.69 |
-| Roc Auc Score      | FFNN        |    0.64 |
-| True Negative Rate | Transformer |    0.70 |
-| True Negative Rate | XGBoost     |    0.49 |
-| True Negative Rate | FFNN        |    0.73 |
-| True Positive Rate | FFNN        |    0.41 |
-| True Positive Rate | XGBoost     |    0.72 |
-| True Positive Rate | Transformer |    0.47 |
+| metric             |   FFNN |   XGBoost |   Transformer |
+|:-------------------|-------:|----------:|--------------:|
+| Cohen Kappa Score  |   0.12 |      0.09 |          0.11 |
+| F1 Score           |   0.32 |      0.28 |          0.28 |
+| Precision Score    |   0.26 |      0.17 |          0.20 |
+| Recall Score       |   0.41 |      0.72 |          0.47 |
+| Roc Auc Score      |   0.64 |      0.69 |          0.64 |
+| True Negative Rate |   0.73 |      0.49 |          0.70 |
 : Model performance metrics (larger values are better) {#tbl-best-max-metrics}
 
 :::
