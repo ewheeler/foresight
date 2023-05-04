@@ -1,5 +1,6 @@
 ---
-title: "Predicting Conflict Escalation"
+title: Text Is All You Need
+subtitle: Predicting conflict escalation with news article text content
 author:
   - name: Diana Kolusheva
     email: email@h
@@ -8,11 +9,12 @@ author:
     email: email@h
     affiliation: Harvard University
   - name: Evan Wheeler
-    email: email@h
+    email: evw217@g.harvard.edu
     affiliation: Harvard University
 lang: en
 format:
   pdf:
+    documentclass: scrartcl
     classoption:
     - twocolumn
     margin-left: 25mm
