@@ -343,8 +343,10 @@ field. We outline some ideas for future work in the next section.
 
 ### Ethical Considerations
 This work carries significant ethical considerations, especially if it were to be operationalized. The first and most apparent is bias in the training data. All of our models showed varying performance by region, and overreliance on such models by decisionmakers could lead to resources being diverted away from regions that need them, but which were underrepresented in the training data and thus had less accurate results. 
+
 If models like these were to become widely used, they may be vulnerable to adversarial attacks. Large volumes of fake news content could be used to overwhelm the true signal of the model, obscuring the intentions of malicious actors, or causing panic.
 Finally, and perhaps most concerningly, is the potential for conflict prediction models to deliver self-fulfilling prophesies. If policy makers become convinced of impending conflict in their own or neighboring countries because of the predictions of an AI model, they may take actions that make conflict more likely. 
+
 Reducing these risks requires emphasizing that these are models, not oracles. They are measuring the temperature of the global media conversation, not gazing into the future. Decisionmakers need to understand that though models like these can be useful tools, they are not a substitute for careful deliberation and dialogue. At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong. 
 
 ## Future work
