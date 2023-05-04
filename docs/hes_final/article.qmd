@@ -247,7 +247,7 @@ with additional country data ranking best on one and worst on the other and the 
 
 \onecolumn
 
-::: {layout="[[1, 1]]"}
+::: {layout="[[1], [1]]"}
 | metric               |   FFNN |   XGBoost |   Transformer |
 |:---------------------|-------:|----------:|--------------:|
 | False Discovery Rate |   0.74 |      0.83 |          0.80 |
@@ -255,6 +255,7 @@ with additional country data ranking best on one and worst on the other and the 
 | False Positive Rate  |   0.27 |      0.51 |          0.30 |
 
 : Model performance metrics (smaller values are better) {#tbl-best-min-metrics}
+
 
 | metric             |   FFNN |   XGBoost |   Transformer |
 |:-------------------|-------:|----------:|--------------:|
@@ -264,6 +265,7 @@ with additional country data ranking best on one and worst on the other and the 
 | Recall Score       |   0.41 |      0.72 |          0.47 |
 | Roc Auc Score      |   0.64 |      0.69 |          0.64 |
 | True Negative Rate |   0.73 |      0.49 |          0.70 |
+
 : Model performance metrics (larger values are better) {#tbl-best-max-metrics}
 
 :::
