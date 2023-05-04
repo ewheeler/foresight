@@ -237,22 +237,11 @@ Transformer model architecture
 
 ## Results
 
-We evaluated the models against a set of common performance metrics (see @tbl-best-max-metrics, @tbl-best-min-metrics, @fig-roc, 
-@fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches 
-produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
+We evaluated the models against a set of common performance metrics (see @tbl-best-max-metrics, @tbl-best-min-metrics, @fig-roc, @fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
 
-Our target was defined differently from related work which made direct comparison less meaningful.
-The closest approach used a presense or absense of any armed conflict related fatality as their binary target  [@10.1093/jeea/jvac025]. 
-They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in 
-peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels 
-XGBoost/KNN model).
+Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presense or absense of any armed conflict related fatality as their binary target  [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
 
-We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false 
-positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. Given 
-these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total 
-number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem 
-to be most relevant metrics. The relative ranks of the models are the opposite for these two metrics with each of the two models
-with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
+We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
 
 \onecolumn
 
@@ -303,17 +292,11 @@ with additional country data ranking best on one and worst on the other and the 
 :::
 \twocolumn
 
-Further investigation showed that while overall numeric metrics look similar, the Transformer-based text-only model appeared to generalized better 
-across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the 
-generalizability could be a reason to prefer Transformer architecture and resampled dataset.
+Further investigation showed that while overall numeric metrics look similar, the Transformer-based text-only model appeared to generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the generalizability could be a reason to prefer Transformer architecture and resampled dataset.
 
-While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a 
-model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model 
-evaluation. Average embeddings dataset and the corresponding statistical model fit in memory while working with article level embeddings 
-in two other proposed methods requires additional data engineering steps to be processed in batches.
+While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embeddings dataset and the corresponding statistical model fit in memory while working with article level embeddings in two other proposed methods requires additional data engineering steps to be processed in batches.
 
-We think that all three approaches produced promising results and the model choice depends on the user's goals, selected performance 
-metrics and available resources.
+We think that all three approaches produced promising results and the model choice depends on the user's goals, selected performance metrics and available resources.
 
 
 ## Ethical Considerations
@@ -336,30 +319,15 @@ Finally, we believe deeper research into regional disparities in model performan
 
 ### Future practical directions
 
-Building an application with a user interface could be a natural extension of this work. We envision a dashboard where a user can view a 
-world map where countries are heatmap colored according to the estimated probability of escalating conflict. Countries with highest risk 
-can be flagged or shown to a user in a separate view. In addition to the visual part of this application, model deployment for easy
-inference is an important project.
+Building an application with a user interface could be a natural extension of this work. We envision a dashboard where a user can view a world map where countries are heatmap colored according to the estimated probability of escalating conflict. Countries with highest risk can be flagged or shown to a user in a separate view. In addition to the visual part of this application, model deployment for easy inference is an important project.
 
-Building a more robust and automated data processing pipeline is another important direction. This would involve designing either a 
-batch or streaming system that can reliably collect data, preprocess and aggregate it into required format, train the model and make 
-predictions. The system should handle computational resources and cost constraints.
+Building a more robust and automated data processing pipeline is another important direction. This would involve designing either a batch or streaming system that can reliably collect data, preprocess and aggregate it into required format, train the model and make predictions. The system should handle computational resources and cost constraints.
 
 ## Conclusions
 
-In this work we explored the possibility of predicting future geopolitical conflict escalation at a country level using a global
-collection of news publications. We compared the usage of text-only data and data enriched with country labels and social indicators. We
-experimented with different ways of aggregating the data and applied both statistical machine learning and deep learning models. The
-results suggest that text embeddings provide a strong enough signal to make such predictions. Different data
-sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common
-numetic metrics. Transformer-based model generalized better across geographies while statistical model provided a size/cost of
-deployment advantage.
+In this work we explored the possibility of predicting future geopolitical conflict escalation at a country level using a global collection of news publications. We compared the usage of text-only data and data enriched with country labels and social indicators. We experimented with different ways of aggregating the data and applied both statistical machine learning and deep learning models. The results suggest that text embeddings provide a strong enough signal to make such predictions. Different data sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common numetic metrics. Transformer-based model generalized better across geographies while statistical model provided a size/cost of deployment advantage.
 
-While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such
-predictions from primarily text data. We provided a clear definition of a binary conflict escalation target and described several
-approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science
-research. The performance results can serve as a benchmark for future research projects in this
-field.
+While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such predictions from primarily text data. We provided a clear definition of a binary conflict escalation target and described several approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science research. The performance results can serve as a benchmark for future research projects in this field.
 
 
 
