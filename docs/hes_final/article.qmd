@@ -149,7 +149,7 @@ Our first approach employed a feed forward neural network model. Uniform manifol
 
 ![Scatterplot of 2-dimension UMAP-reduced articles with spike labels](imgs/fig-umap2d-ds-targets.png){#fig-umap2d-ds-targets}
 
-Country context inputs consisted of two numerical indicators ('Under-five mortality rate 2019' and 'Adolescent population 2020 Proportion of total population (%) Total' from UNICEF's State of the World's Children report [@sowc]) and three one-hot-encoded categorical indicators (categories of Human Development Index ranges [@hdi], categories of gross national income per capita [@wb], and categories of Fragile States Index ranges[@fsi]).
+Country context inputs consisted of two numerical indicators ('Under-five mortality rate 2019' and 'Adolescent population 2020 Proportion of total population (%) Total' from UNICEF's State of the World's Children report [@sowc]) and three one-hot-encoded categorical indicators (categories of Human Development Index ranges [@hdi], categories of gross national income per capita [@wb], and categories of Fragile States Index ranges [@fsi]).
 
 ::: {#fig-ffnn layout-ncol=1}
 ```{mermaid}
@@ -203,7 +203,7 @@ Statistical model architecture
 :::
 ### Conflict Prediction Using Text Alone
 
-Our third approach used a pair of transformer models to extract information directly from the GDELT embedding corpus[@vaswani2017attention]. Architecturally, both models are encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
+Our third approach used a pair of transformer models to extract information directly from the GDELT embedding corpus [@vaswani2017attention]. Architecturally, both models are encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
 
 The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. The classifier could then be used to make final predictions on the resulting, distilled dataset.
 
@@ -241,7 +241,7 @@ Transformer model architecture
 
 We evaluated the models against a set of common performance metrics (see @tbl-best-max-metrics, @tbl-best-min-metrics, @fig-roc, @fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
 
-Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presense or absense of any armed conflict related fatality as their binary target  [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
+Our target was defined differently from related work which made direct comparison less meaningful. The closest approach used a presense or absense of any armed conflict related fatality as their binary target [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
 
 We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
 
