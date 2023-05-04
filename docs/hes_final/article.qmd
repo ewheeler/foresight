@@ -46,6 +46,7 @@ include-in-header:
       \twocolumn
       \end{figure}}
       \makeatother
+       \usepackage[font=small,labelfont={bf,small}]{caption}
 # https://tex.stackexchange.com/questions/31301/how-to-reduce-the-number-of-hyphenation
 include-before-body:
   - text: |
@@ -60,7 +61,7 @@ embed-resources: true
 notebook-links: false
 title-block-banner: true
 abstract: |
-  The task of forecasting conflict escalation is of great interest to policy makers, executives, and social scientists. In this article, we propose a novel, text-first approach to computational conflict prediction using contemporary natural language processing and machine learning techniques. We outline three methods to extract generalizable conflict signals directly from a corpus of ofer 2.5 million document embeddings derived from publicly available news sources. The first uses text data enriched by country context features, the second uses text data conditioned only on the country label itself, and the third extracts a signal from the text alone, with no additional country or region-specific features. We demonstrate that usable conflict signals can be extracted directly from text sources, and we outline potential avenues for further research that we believe may yield models that can provide early warnings to decision makers to facilitate strategic planning, resource allocation, and disaster mitigation. 
+  The task of forecasting conflict escalation is of great interest to policy makers, executives, and social scientists. In this article, we propose a novel, text-first approach to computational conflict prediction using contemporary natural language processing and machine learning techniques. We outline three methods to extract generalizable conflict signals directly from a corpus of over 2.5 million document embeddings derived from publicly available news sources. The first uses text data enriched by country context features, the second uses text data conditioned only on the country label itself, and the third extracts a signal from the text alone, with no additional country or region-specific features. We demonstrate that usable conflict signals can be extracted directly from text sources, and we outline potential avenues for further research that we believe may yield models that can provide early warnings to decision makers to facilitate strategic planning, resource allocation, and disaster mitigation. 
 
 ---
 ## Introduction
@@ -137,7 +138,7 @@ Our first approach employed a feed forward neural network model. Uniform manifol
 
 ![Scatterplot of 2-dimension UMAP-reduced articles with spike labels](imgs/fig-umap2d-ds-targets.png){#fig-umap2d-ds-targets}
 
-Country context inputs consisted of two numerical indicators ('Under-five mortality rate 2019' and 'Adolescent population 2020 Proportion of total population (%) Total' from UNICEF's State of the World's Children report) and three one-hot encoded categorical indicators (3 categories of Human Development Index ranges [@hdi], 4 categories of gross national income per capita [@wb], and 3 categories of Fragile States Index ranges[@fsi]).
+Country context inputs consisted of two numerical indicators ('Under-five mortality rate 2019' and 'Adolescent population 2020 Proportion of total population (%) Total' from UNICEF's State of the World's Children report [@sowc]) and three one-hot encoded categorical indicators (3 categories of Human Development Index ranges [@hdi], 4 categories of gross national income per capita [@wb], and 3 categories of Fragile States Index ranges[@fsi]).
 
 ::: {#fig-ffnn layout-ncol=1}
 ```{mermaid}
@@ -205,7 +206,7 @@ With the encoder's training complete, we returned to the original base dataset. 
 
 ::: {#fig-transformer layout-ncol=1}
 ```{mermaid}
-%%| fig-width: 5
+%%| fig-width: 3
 %%| fig-height: 3
 flowchart TD
     GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
@@ -223,32 +224,87 @@ flowchart TD
 ```
 Transformer model architecture
 :::
+
+
 ## Results
 
-We evaluated the models against a set of common performance metrics (see @fig-best-max-metrics, @fig-best-min-metrics, @fig-roc, @fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparative results. Each of the models outperformed the other two in a subset of these metrics. This suggests that the choice of the model architecture for this task would depend on specific application goals. We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. Two models using country features seem to perform
-better on these two metrics.
+We evaluated the models against a set of common performance metrics (see @tbl-best-max-metrics, @tbl-best-min-metrics, @fig-roc, @fig-prc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparative results. Each of the models outperformed the other two in a subset of these metrics. This suggests that the choice of the model architecture for this task would depend on specific application goals. We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. Two models using country features seem to perform better on these two metrics.
 
 In this work we defined the target in a way that was not used in prior literature, we cannot directly compare our models' performance to others. The most similar work used a presense or absense of any armed conflict related fatality as their binary target  [@10.1093/jeea/jvac025]. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic retrieval) model. Our best ROC_AUC score is 69% but the comparison is not very meaningful due to difference in targets.
 
-![Model performance metrics (higher values are better)](imgs/tbl-best-max-metrics.png){#fig-best-max-metrics}
+\onecolumn
 
-![Model performance metrics (lower values are better)](imgs/tbl-best-min-metrics.png){#fig-best-min-metrics}
+::: {layout="[[1, 1]]"}
+| metric               | model       |   value |
+|:---------------------|:------------|--------:|
+| False Discovery Rate | Transformer |    0.80 |
+| False Discovery Rate | XGBoost     |    0.83 |
+| False Discovery Rate | FFNN        |    0.74 |
+| False Negative Rate  | Transformer |    0.53 |
+| False Negative Rate  | XGBoost     |    0.28 |
+| False Negative Rate  | FFNN        |    0.59 |
+| False Positive Rate  | Transformer |    0.30 |
+| False Positive Rate  | XGBoost     |    0.51 |
+| False Positive Rate  | FFNN        |    0.27 |
+
+: Model performance metrics (smaller values are better) {#tbl-best-min-metrics}
+
+| metric             | model       |   value |
+|:-------------------|:------------|--------:|
+| Cohen Kappa Score  | XGBoost     |    0.09 |
+| Cohen Kappa Score  | FFNN        |    0.12 |
+| Cohen Kappa Score  | Transformer |    0.11 |
+| F1 Score           | FFNN        |    0.32 |
+| F1 Score           | XGBoost     |    0.28 |
+| F1 Score           | Transformer |    0.28 |
+| Precision Score    | XGBoost     |    0.17 |
+| Precision Score    | FFNN        |    0.26 |
+| Precision Score    | Transformer |    0.20 |
+| Recall Score       | XGBoost     |    0.72 |
+| Recall Score       | Transformer |    0.47 |
+| Recall Score       | FFNN        |    0.41 |
+| Roc Auc Score      | Transformer |    0.64 |
+| Roc Auc Score      | XGBoost     |    0.69 |
+| Roc Auc Score      | FFNN        |    0.64 |
+| True Negative Rate | Transformer |    0.70 |
+| True Negative Rate | XGBoost     |    0.49 |
+| True Negative Rate | FFNN        |    0.73 |
+| True Positive Rate | FFNN        |    0.41 |
+| True Positive Rate | XGBoost     |    0.72 |
+| True Positive Rate | Transformer |    0.47 |
+: Model performance metrics (larger values are better) {#tbl-best-max-metrics}
+
+:::
+\twocolumn
+
+\onecolumn
+
+::: {layout="[[1, 1]]"}
 
 ![Receiver Operator Characteristics](imgs/fig-roc.png){#fig-roc}
 
 ![Precision Recall Curve](imgs/fig-prc.png){#fig-prc}
 
+:::
+::: {layout="[[1, 1]]"}
+
+![FFNN model accuracy on test data](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy}
+
+![XGBoost model accuracy on test data](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy}
+
+:::
+::: {layout="[[1, 1]]"}
+
+![Transformer model accuracy on test data](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy}
+
+:::
+\twocolumn
+
 Further investigation showed that while overall numeric metrics look similar and there seems to be a slight performance advantage in using country data in addition to text features, the Transformer-based text-only model generalized better across the globe. Since our goal was to build a global model capable of predicting conflict escalation in any part of the world, the generalizability is a significant reason to prefer Transformer architecture and resampled dataset.
-
-![FFNN model predictions on test data](imgs/fig-ffnn-test-predictions.png){#fig-ffnn-test-predictions}
-
-![XGBoost model predictions on test data](imgs/fig-xgboost-test-predictions.png){#fig-xgboost-test-predictions}
-
-![Transformer model Predictions on test data](imgs/fig-transformer-test-predictions.png){#fig-transformer-test-predictions}
 
 While performance is often the main objective to optimize for when developing prediction models, our practical goal was to develop a model that can assist UNICEF in their decision making. With that in mind, cost of deployment is also an important factor for model evaluation. Average embeddings dataset and the corresponding statistical model fit in memory while working with article level embeddings in two other proposed methods requires additional data engineering steps to be processed in batches.
 
-We think that all three approaches produced promising results and the model choice depends on the developers' goals, performance metrics and available resources.
+We think that all three approaches produced promising results and the model choice depends on the user's goals, performance metrics and available resources.
 
 ## Conclusions
 
