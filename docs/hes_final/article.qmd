@@ -27,16 +27,11 @@ format:
     keep-tex: true
 bibliography: bibliography.bibtex
 # https://stackoverflow.com/a/75043433
-template-partials: 
-- title.tex
+#template-partials: 
+#- title.tex
 # https://github.com/quarto-dev/quarto-cli/discussions/2786
 include-in-header:
   - text: |
-      \usepackage[noblocks]{authblk}
-      \renewcommand*{\Authsep}{, }
-      \renewcommand*{\Authand}{, }
-      \renewcommand*{\Authands}{, }
-      \renewcommand\Affilfont{\small}
       \usepackage{float}
       \makeatletter
       \let\oldlt\longtable
