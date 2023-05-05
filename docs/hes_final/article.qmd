@@ -1,12 +1,12 @@
 ---
 title: Text Is All You Need
-subtitle: Predicting conflict escalation with news article text content
+subtitle: Predicting Conflict Escalation Using Global News Content
 author:
   - name: Diana Kolusheva
-    email: email@h
+    email: dik431@g.harvard.edu
     affiliation: Harvard University
   - name: Chad Stoughton
-    email: email@h
+    email: ch0793@g.harvard.edu
     affiliation: Harvard University
   - name: Evan Wheeler
     email: evw217@g.harvard.edu
