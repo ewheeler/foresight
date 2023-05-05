@@ -238,7 +238,7 @@ Transformer model architecture
 
 ## Results
 
-We evaluated the models against a set of common performance metrics (see @fig-best-min-metrics, @fig-best-max-metrics, @fig-roc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparative results. Each of the models outperformed the other two in a subset of these metrics. 
+We evaluated the models against a set of common performance metrics (see @fig-best-min-metrics, @fig-best-max-metrics, @fig-roc). Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparable results. Each of the models outperformed the other two in a subset of these metrics. 
 
 ![Model metrics (smaller values are better)](imgs/fig-best-min-metrics.png){#fig-best-min-metrics}
 
