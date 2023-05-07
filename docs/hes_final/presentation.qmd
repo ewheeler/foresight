@@ -1,0 +1,366 @@
+---
+title: Text Is All You Need
+subtitle: Predicting Conflict Escalation Using Global News Content
+author:
+  - name: Diana Kolusheva
+    email: dik431@g.harvard.edu
+    affiliation: Harvard University
+  - name: Chad Stoughton
+    email: ch0793@g.harvard.edu
+    affiliation: Harvard University
+  - name: Evan Wheeler
+    email: evw217@g.harvard.edu
+    affiliation: Harvard University
+lang: en
+format:
+  revealjs:
+    incremental: true
+
+---
+## Introduction
+- The task of forecasting conflict escalation is of great interest to policy makers, executives, and social scientists. 
+- We introduce a conflict escalation definition and a novel binary classification metric.
+- We outline 3 methods to extract generalizable conflict signals directly from a corpus of over 2.5 million document embeddings derived from global news sources using contemporary natural language processing and machine learning methods.
+
+## Conflict forecasting
+
+- Predicting conflict has long been of interest to researchers and practitioners of international relations, and statistical and computational methods to do so can be found in the literature as early as 1944. 
+- Modern methodologies that resemble those we outline here began to appear in the literature in the early 2010s, when researchers began using holdout datasets for model validation. 
+- This shift followed work by Ward et al. that sharply criticized the use of statistical significance tests on in-sample prediction to validate conflict models.
+
+## Challenge of global models
+
+- Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict. 
+- This introduces a “small-data problem” where relatively few observations of conflict are available for a given country. 
+- Some efforts have been made to overcome this by building generalizable models that can theoretically be used to make predictions on any country.
+
+:::{.notes}
+- We followed the latter approach in developing our model, hypothesizing that the larger number of observations available to a global model will allow it to extract more generalizable signals of conflict, and that such a model will be better able to predict unforeseen risks in countries with little available training data.
+:::
+
+## Methodology
+
+- Our approach is text-first, making predictions primarily or exclusively from text, with few or no other features added.
+- To the best of our knowledge, no conflict prediction model described in the literature makes use of text embeddings.
+- Previous efforts have included statistical analysis of text, and unsupervised Latent Dirichlet Allocation (LDA) for topic extraction.
+
+## Three approaches to extracting conflict signals from text embeddings
+
+- The first approach used supervised dimensionality reduction and a feed-forward neural network conditioned with country context characteristics.
+- In the second approach, we used a compact dataset of monthly embedding averages per country per month and applied statistical models such as K-Nearest Neighbors and XGBoost.
+- In the third approach we stacked multiple article-level embeddings and applied transformer-based models to extract a signal exclusively from the text corpus.
+
+## Defining Conflict Escalation
+
+- Our task of modeling conflict escalation required a precise definition of what conflict escalation means. 
+- We began with raw event and casualty counts from the [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/), whose team of researchers monitor thousands of sources in 20 languages to generate a dataset containing monthly totals of conflict events and their related fatalities . 
+
+::: {.aside}
+- Prior work has treated this as a binary classification task, asking whether or not conflict escalated in a given month, and we adopt this approach as well.
+- In contrast to prior work, however, we do not treat the simple presence of a fatality due to conflict as sufficient to indicate conflict escalation. 
+:::
+
+::: {.notes}
+- ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, and protests. With these totals in-hand, we needed to create a target to label our training data. 
+- To achieve our objective of creating a generalizable conflict model, we required a metric that was consistent across varying local conditions. 
+- Small changes in the absolute number of monthly fatalities can have widely different implications depending on the country and time period. 
+:::
+
+## Introducing our 'spike' conflict metric
+
+- We derived a metric designed to highlight relative “spikes” in political violence. Calculating whether a spike occurred in a given month is a two-step process. 
+- First, we calculated the trend in violence for a given month, defined by the slope of OLS regression of the number of ACLED-documented fatalities in target month & preceding 2 months.
+- Next, we calculated whether that slope was in the 75th percentile of such slopes in the target country for the preceding 2 years.
+
+:::{.notes}
+This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any time.
+:::
+---
+
+![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png){#fig-spike}
+
+- Our 'spike' binary metric is sensitive to small increases in political violence in peaceful countries/periods, while also filtering out small fluctuations in long-standing conflicts.
+
+:::{.notes}
+
+- @fig-spike shows how our metric captures conflict fluctuations in Ukraine. Prior to the Russian invasion of February 2022, small fluctuations trigger a spike. However, much larger fluctuations in the period following the invasion are filtered out, as the spike formula adjusts to the higher level of baseline conflict. 
+
+- The increase in violence during the Ukrainian counter-offensive in the late summer again triggers a spike, and this reflects significant changes in the situation on the ground.
+:::
+
+## News Content Data
+
+- The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world . 
+- In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512-dimension document-level embeddings of their scraped news articles using the Universal Sentence Encoder.
+
+:::{.notes}
+- GDELT’s coverage over-represents the western world, particularly the United States and Europe.
+- GDELT does represent Russia, India and China better than other event datasets, but it continues to underrepresent other parts of the world, particularly the global south.
+- English is the most common language in the GDELT dataset, comprising more than 40% of the articles in its corpus.
+:::
+
+## Training Dataset
+
+::: {#fig-dgp layout-ncol=1}
+```{mermaid}
+%%| fig-width: 5
+%%| fig-height: 5
+flowchart TD
+    GSG[GDELT Global Similarity Graph] -->|sample 20% of daily files| Merge{Merge on article URL,\n select relevant features}
+    GKG[GDELT Global Knowledge Graph] -->|sample 20% of daily files| Merge
+
+    Merge --> GDELT(GDELT dataset)
+
+    ACLED[ACLED monthly conflict totals] --> Spike{Calculate our lagged\n 'spike' binary variable}
+
+    GDELT --> Data(Time-partitioned train, val, & test datasets)
+    Spike --> Data
+```
+Data generation process
+:::
+
+:::{.notes}
+- Our training data was derived from these GDELT and ACLED datasets. 
+- GDELT news article embeddings served as our primary independent variable, while the “spike” metric derived from ACLED’s conflict data served as our target variable.
+- The spike metric was used to label article data on a three-month time lag, allowing us to make predictions of future events.
+- Our training dataset thus ran from January 2020 through October 2022. Data from November 2022 through March 2023 was used for model validation and testing.
+:::
+
+## Conflict Prediction Using Text and Country Features
+
+- Our first approach employed a feed forward neural network model. 
+- Uniform manifold approximation and projection (UMAP) was used to reduce dimensionality of GDELT article embeddings in a supervised manner.
+
+---
+
+![Scatterplot of 2-dimension UMAP-reduced articles with spike labels](imgs/fig-umap2d-ds-targets.png){#fig-umap2d-ds-targets}
+
+:::{.notes}
+- Our spike variable was used to condition the dimension reduction process of the training data to encourage separation of the variable classes in the reduced embedding space. 
+- The fit UMAP model was applied to the validation and test data without supervision. These reduced, 128-dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
+:::
+
+## Additional country context inputs
+
+- 2 numerical indicators from UNICEF's State of the World's Children report: 'Under-five mortality rate 2019' & 'Adolescent population 2020 Proportion of total population (%) Total'
+- 3 one-hot-encoded categorical indicators: Human Development Index ranges, categories of gross national income per capita, & categories of Fragile States Index ranges)
+
+:::{.notes}
+- avoid the per-country 'small data problem' by allowing model to learn similarities between country contexts and generalize
+:::
+
+---
+
+::: {#fig-ffnn layout-ncol=1}
+```{mermaid}
+%%| fig-width: 5
+%%| fig-height: 5
+flowchart TD
+    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
+
+    Articles --> UMAP{Supervised UMAP}
+    UMAP --> Compact(128 dimension representations)
+
+    Compact --> FFNN{Feed Forward Neural Network}
+    FFNN --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response binary variable) --> |included during training|UMAP
+
+    Spike -->FFNN
+
+    Context[Country context indicators] --> FFNN
+```
+Feed forward neural network model architecture
+:::
+
+## Conflict Prediction Using Text and Country Labels
+
+- In this approach we prepared the dataset by averaging news article embeddings per country, per month. We also included one-hot encoded columns for countries, but no other country features were added. 
+- Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from the “curse of dimensionality”. 
+
+---
+
+::: {#fig-xgboost layout-ncol=1}
+```{mermaid}
+%%| fig-width: 5
+%%| fig-height: 5
+flowchart TD
+    GDELT[GDELT Embeddings] --> |average by country by month| AGG(Monthly news representation)
+    Countries[Country labels] --> |one-hot encoding| AGG
+
+    AGG --> |PCA| PCA(169 dimension representation)
+    PCA --> KNN{KNN}
+    PCA --> XGD{XGBoost}
+
+    XGD --> AVG{Mean}
+    KNN --> AVG
+    AVG --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] --> |compute our 'spike' variable| Spike(Conflict response binary variable)
+    Spike --> XGD
+    Spike --> KNN
+```
+Statistical model architecture
+:::
+
+:::{.notes}
+- This was handled by performing Principal Component Analysis; we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance.
+- Another issue was a class imbalance: conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
+- The model used in this approach is a stacked model that averages probabilities independently predicted by a K-Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
+:::
+
+## Conflict Prediction Using Text Alone
+
+- Our third approach used a pair of encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
+- The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. 
+- The classifier could then be used to make final predictions on the resulting, distilled dataset.
+
+--- 
+
+- To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country.
+- Each of these matrices was then split into several random subsamples of 50 articles each. 
+- Samples for countries in which $n<50$ were padded to $512\times50$. 
+
+:::{.notes}
+
+- By limiting the size of each sample to 50 articles, we reduced the dimensionality of each sample.
+- By splitting the corpus into multiple unique training examples per country per month, we were able to substantially increase the size of the training dataset.
+- This new dataset offered major advantages in combatting the curse of dimensionality, however, it also presented a distorted view of the world which over-represents countries that receive more media coverage and underrepresents those that receive less, amplifying the biases already present in the GDELT dataset. 
+- Despite this limitation, the dataset was sufficient to train the encoder, which was fit to the modified dataset with the time-shifted spike metric as its target. 
+:::
+
+---
+
+![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){#fig-transformer-viz}
+
+- Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. 
+- The output of these 16 neurons would be used in the classification stage.
+
+---
+
+- With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices.
+- Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector.
+- Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. 
+
+:::{.notes}
+- This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target. 
+- In contrast to our earlier approaches, the dual-transformer model was trained purely on news article text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
+:::
+
+---
+
+::: {#fig-transformer layout-ncol=1}
+```{mermaid}
+%%| fig-width: 5
+%%| fig-height: 5
+flowchart TD
+    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
+
+    Articles --> Trans1{Encoder\n transformer}
+    Trans1 -->|classifier head present during training| Compact(16 dimension representations)
+
+    Compact --> Trans2{Binary\n classifier\n transformer}
+    Trans2 --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response\n binary variable) --> Trans2
+
+    Spike -->|included during model training| Trans1
+```
+Transformer model architecture
+:::
+
+## Results
+
+- We evaluated the models against a set of common performance metrics (see @fig-best-min-metrics, @fig-best-max-metrics, @fig-roc). 
+- Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparable results.
+- Each of the models outperformed the other two in a subset of these metrics. 
+
+---
+
+- We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. 
+- Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. 
+
+---
+
+![Model metrics (large values are better)](imgs/fig-best-max-metrics.png){#fig-best-max-metrics}
+
+:::{.notes}
+- The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
+:::
+
+---
+
+![Model metrics (smaller values are better)](imgs/fig-best-min-metrics.png){#fig-best-min-metrics}
+
+---
+
+![Receiver Operator Characteristics](imgs/fig-roc.png){#fig-roc}
+
+:::{.notes}
+- Our target was defined differently from related work which made direct comparison less meaningful.
+- The closest approach used a presence or absence of any armed conflict related fatality as their binary target. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
+:::
+
+---
+
+![FFNN model accuracy on test data](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy}
+
+
+![XGBoost model accuracy on test data](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy}
+
+
+![Transformer model accuracy on test data](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy}
+
+:::{.notes}
+- Further investigation showed that while overall numeric metrics look similar, different models appeared to perform better in different regions of the world—see @fig-ffnn-test-accuracy, @fig-xgboost-test-accuracy, and @fig-transformer-test-accuracy. 
+:::
+
+---
+
+- While performance is often the main objective when developing prediction models, our practical goal was a tool that can assist UNICEF, so cost & complexity is an important consideration.
+- Average monthly embeddings dataset & corresponding statistical model fit in memory, whereas article-level embeddings in our other methods require additional data engineering steps to be processed in batches.
+- All three approaches produced promising results so the model choice depends on the user's goals, priority performance metrics, and available resources.
+
+## Ethical Considerations
+- This work carries significant ethical considerations, especially if it were to be operationalized. 
+- First is bias in the training data: all of our models showed varying performance by region, and over-reliance on such models by decision makers could lead to resources being diverted away from regions that need them--but which were underrepresented in the training data and thus had less accurate results. 
+
+---
+
+- If models like these were to become widely used, they may be vulnerable to adversarial attacks. Large volumes of fake news content could be used to overwhelm the true signal from news articles to obscure the intentions of malicious actors, or to cause panic. 
+- Finally, and perhaps most concerning, is the potential for conflict prediction models to deliver self-fulfilling prophesies. If policy makers become convinced of impending conflict in their own or neighboring countries because of the predictions of an AI model, they may take actions that make conflict more likely. 
+
+---
+
+- Reducing these risks requires emphasizing that these are models, not oracles. They are measuring the temperature of the global media conversation, not gazing into the future.
+- Decision makers need to understand that though models like these can be useful tools, they are not a substitute for careful deliberation and dialogue.
+- At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong. 
+
+## Future work
+
+- We foresee several ways to extend this work, and there are exciting opportunities for both further research and operationalizations.
+
+## Future research directions
+
+- Our work used only 20% of the daily embeddings available through GDELT: increasing size of training sets could yield better results. 
+- Continued experimentation with data sampling and aggregation approaches, as well as model tuning, could produce models that outperform those outlined here without additional training data. 
+- Finally, we believe deeper research into regional disparities in model performance is needed. Understanding the limitations of global media coverage for conflict prediction will be critical to any effort to operationalize this work.
+
+## Conclusions
+
+- In this work we explored the possibility of predicting future geopolitical conflict escalation at a country level using a global collection of news publications. We compared the usage of text-only data and data enriched with country labels and social indicators. 
+- We introduce a conflict escalation definition and a novel binary classification metric.
+
+---
+
+- The results suggest that text embeddings provide a strong enough signal to make such predictions. 
+- Different data sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common numeric metrics. 
+
+---
+
+- The neural network-based models appear to generalize better across geographies while the statistical model provided a size/cost of deployment advantage.
+- While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such predictions from primarily text data. 
+- We described several approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science research. 
+- The performance results can serve as a benchmark for future research projects in this field.
