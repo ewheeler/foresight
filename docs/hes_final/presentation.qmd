@@ -324,19 +324,25 @@ Transformer model architecture
 - All three approaches produced promising results so the model choice depends on the user's goals, priority performance metrics, and available resources.
 
 ## Ethical Considerations
-- This work carries significant ethical considerations, especially if it were to be operationalized. 
-- First is bias in the training data: all of our models showed varying performance by region, and over-reliance on such models by decision makers could lead to resources being diverted away from regions that need them--but which were underrepresented in the training data and thus had less accurate results. 
+- Bias in the training data
+- Adversarial attacks
+- Self-fulfilling prophesies
+
+:::{.notes}
+- All models showed varying performance by region, could lead to resources being misallocated. 
+- Large volumes of fake news could overwhelm true signal, obscure intentions of malicious actors & cause panic.
+- AI predictions of impending conflict may lead policy makers to take actions that make conflict more likely. 
+:::
 
 ---
 
-- If models like these were to become widely used, they may be vulnerable to adversarial attacks. Large volumes of fake news content could be used to overwhelm the true signal from news articles to obscure the intentions of malicious actors, or to cause panic. 
-- Finally, and perhaps most concerning, is the potential for conflict prediction models to deliver self-fulfilling prophesies. If policy makers become convinced of impending conflict in their own or neighboring countries because of the predictions of an AI model, they may take actions that make conflict more likely. 
+- Models, not oracles 
+- Not a substitute for careful deliberation and dialogue
+- At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong
 
----
-
-- Reducing these risks requires emphasizing that these are models, not oracles. They are measuring the temperature of the global media conversation, not gazing into the future.
-- Decision makers need to understand that though models like these can be useful tools, they are not a substitute for careful deliberation and dialogue.
-- At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong. 
+:::{.notes}
+- Measuring the temperature of the global media conversation, not gazing into the future.
+:::
 
 ## Future work
 
