@@ -214,8 +214,7 @@ Statistical model architecture
 
 - Our third approach used a pair of encoder-only transformers
 - the “encoder” and the “classifier”.
-- The encoder was used to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size.
-- Analogous to the role of a convolutional layer in a CNN. 
+- The encoder was used to distil the embedding corpus by analyzing a subset of article corpus and reducing it's dimensionality.
 - The classifier could then be used to make final predictions on the resulting, distilled dataset.
 
 ---
