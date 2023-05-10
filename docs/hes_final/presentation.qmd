@@ -212,15 +212,29 @@ Statistical model architecture
 
 ## Conflict Prediction Using Text Alone
 
-- Our third approach used a pair of encoder-only transformers, but for simplicity, we will refer to the first of these models as “the encoder” and the second as the “classifier”.
-- The purpose of the encoder was to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size. This is roughly analogous to the role of a convolutional layer in a CNN. 
+- Our third approach used a pair of encoder-only transformers
+- the “encoder” and the “classifier”.
+- The encoder was used to reduce the dimensionality of the embedding corpus by analyzing a subset of article embeddings and returning a single vector of substantially reduced size.
+- Analogous to the role of a convolutional layer in a CNN. 
 - The classifier could then be used to make final predictions on the resulting, distilled dataset.
 
---- 
+---
 
-- To prepare the training dataset, our full sample of the GDELT corpus was split into a single $512\times n$ matrix for each country and month where $n$ is the number of articles published in that month related to that country.
-- Each of these matrices was then split into several random subsamples of 50 articles each. 
-- Samples for countries in which $n<50$ were padded to $512\times50$. 
+:::: {.columns}
+
+::: {.column width="50%"}
+![Transformer Model](imgs/Transformer_Viz.png){#fig-transformer-viz}
+:::
+
+::: {.column width="50%"}
+Training the Encoder
+
+- Each country/month sample was split into subsamples of 50 articles each
+- The same label was used for each subsample, creating multiple unique training samples per country per month 
+- This produced a larger, but more distorted corpus
+:::
+
+:::: 
 
 :::{.notes}
 
@@ -232,16 +246,20 @@ Statistical model architecture
 
 ---
 
-![Reducing Embedding Dimensionality with Transformer Encoder](imgs/Transformer_Viz.png){#fig-transformer-viz}
+:::: {.columns}
+
+::: {.column width="50%"}
+![Transformer Model](imgs/Transformer_Viz.png){#fig-transformer-viz}
+:::
+
+::: {.column width="50%"}
+Training the Classifier
 
 - Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. 
-- The output of these 16 neurons would be used in the classification stage.
-
----
-
-- With the encoder's training complete, we returned to the original base dataset. Each country-month matrix was again split into $512\times50$ matrices.
-- Each of these samples could then be passed into the encoder, which distilled it into a $length-16$ vector.
 - Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. 
+:::
+
+:::: 
 
 :::{.notes}
 - This produced a new, distilled, and undistorted dataset which could then be used to train the classifier using the same spike metric as its target. 
