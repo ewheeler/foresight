@@ -35,7 +35,7 @@ format:
 
 - Most contemporary work focuses on country or region-specific models. 
   + This introduces a “small-data problem” 
-- We chose to persue a global model, a relatively new area of reseatch in this domain
+- We chose to persue a global model, a relatively new area of research in this domain
   + This introduces a new problem of accounting for local conditions
 
 :::{.notes}
