@@ -61,7 +61,7 @@ format:
 - Small changes in the absolute number of monthly fatalities can have widely different implications depending on the country and time period. 
 :::
 
-## The 'Spike' conflict metric
+## Our 'Spike' conflict metric
 
 - We derived a metric to highlight relative “spikes” in political violence.
 - Two step calculation
@@ -73,7 +73,7 @@ format:
 This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any time.
 :::
 
-### Spike Metric Cont...
+## 'Spike' conflict metric example
 
 ![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png){#fig-spike}
 
