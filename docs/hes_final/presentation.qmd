@@ -35,7 +35,7 @@ format:
 
 - Most contemporary work focuses on country or region-specific models. 
   + This introduces a “small-data problem” 
-- We chose to persue a global model, a relatively new area of reseatch in this domain
+- We chose to persue a global model, a relatively new area of research in this domain
   + This introduces a new problem of accounting for local conditions
 
 :::{.notes}
@@ -153,15 +153,6 @@ Data generation process
 - The fit UMAP model was applied to the validation and test data without supervision. These reduced, 128-dimension embeddings, along with country context indicators, were used as inputs to a feed forward neural network with a single hidden layer of 32 neurons. The model's 4577 parameters were trained for 3 epochs.
 :::
 
-## Additional country context inputs
-
-- 2 numerical indicators from UNICEF's State of the World's Children report: 'Under-five mortality rate 2019' & 'Adolescent population 2020 Proportion of total population (%) Total'
-- 3 one-hot-encoded categorical indicators: Human Development Index ranges, categories of gross national income per capita, & categories of Fragile States Index ranges)
-
-:::{.notes}
-- avoid the per-country 'small data problem' by allowing model to learn similarities between country contexts and generalize
-:::
-
 ---
 
 ::: {#fig-ffnn layout-ncol=1}
@@ -185,6 +176,17 @@ flowchart TD
     Context[Country context indicators] --> FFNN
 ```
 Feed forward neural network model architecture
+:::
+
+:::{.notes}
+- avoid the per-country 'small data problem' by allowing model to learn similarities between country contexts and generalize
+- 2 numerical indicators from UNICEF's State of the World's Children report: 
+  + 'Under-five mortality rate 2019' 
+  + 'Adolescent population 2020 Proportion of total population (%) Total'
+- 3 one-hot-encoded categorical indicators: 
+  + Human Development Index ranges 
+  + gross national income per capita
+  + Fragile States Index ranges
 :::
 
 ## Conflict Prediction Using Text and Country Labels
@@ -422,11 +424,9 @@ Model Accuracy on Test Set
 - The performance results can serve as a benchmark for future research projects in this field
 
 :::{.notes}
-We explored the possibility of predicting future geopolitical conflict escalation using a global collection of news publications
-:::
----
-
+- We explored the possibility of predicting future geopolitical conflict escalation using a global collection of news publications
 - The neural network-based models appear to generalize better across geographies while the statistical model provided a size/cost of deployment advantage.
 - While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such predictions from primarily text data. 
 - We described several approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science research. 
 - The performance results can serve as a benchmark for future research projects in this field.
+:::
