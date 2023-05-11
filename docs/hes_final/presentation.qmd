@@ -175,11 +175,9 @@ Feed forward neural network model architecture
 
 ## Conflict Prediction Using Text and Country Labels
 
-- In this approach we prepared the dataset by averaging news article embeddings per country, per month. We also included one-hot encoded columns for countries, but no other country features were added. 
-- Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from the “curse of dimensionality”. 
+:::: {.columns}
 
----
-
+::: {.column width="50%"}
 ::: {#fig-xgboost layout-ncol=1}
 ```{mermaid}
 %%| fig-width: 5
@@ -202,8 +200,21 @@ flowchart TD
 ```
 Statistical model architecture
 :::
+:::
+
+::: {.column width="50%"}
+- Average article embeddings per country per month
+- One-hot encoded country labels
+- Reduce dimensionality with PCA
+- Train two models: K Nearest Neighbors and XGBoost
+- Average their predictions
+:::
+
+::::
 
 :::{.notes}
+- In this approach we prepared the dataset by averaging news article embeddings per country, per month. We also included one-hot encoded columns for countries, but no other country features were added. 
+- Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from the “curse of dimensionality”. 
 - This was handled by performing Principal Component Analysis; we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance.
 - Another issue was a class imbalance: conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
 - The model used in this approach is a stacked model that averages probabilities independently predicted by a K-Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
