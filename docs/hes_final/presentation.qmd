@@ -248,8 +248,8 @@ Statistical model architecture
 ::: {.column width="50%"}
 
 - Trained using a dataset that drew multiple samples per country per month of 50 articles each 
-- The same label was used for each subsample, creating multiple unique training examples for each country and month 
-- This produced a larger, but more distorted corpus
+- This created multiple unique training examples for each country and month 
+- Once trained, the Encoder's weights were frozen and penultimate layer was exposed
 :::
 
 :::: 
@@ -264,7 +264,7 @@ Statistical model architecture
 
 ---
 
-### Training the Classifier
+### The Classifier
 
 :::: {.columns}
 
@@ -273,8 +273,9 @@ Statistical model architecture
 :::
 
 ::: {.column width="50%"}
-- Once the Encoder was trained, it's penultimate layer of 16 dense neurons was exposed and the model was frozen
-- Each country/month matrix was then fed into in batches of 50 articles, yeilding a single training example for each country and month of size $16\times\frac{n}{50}$
+- Each country/month embedding matrix was passed into the Encoder in batches of 50 articles
+- This produced a single distilled training example for each country and month
+- This final, undistorted data set was then used for classification
 
 :::
 
