@@ -18,79 +18,95 @@ format:
 
 ---
 ## Introduction
-- The task of forecasting conflict escalation is of great interest to policy makers, executives, and social scientists. 
-- We introduce a conflict escalation definition and a novel binary classification metric.
-- We outline 3 methods to extract generalizable conflict signals directly from a corpus of over 2.5 million document embeddings derived from global news sources using contemporary natural language processing and machine learning methods.
+- Forecasting conflict escalation is of interest to policy makers, executives, and social scientists. 
+- In our paper, we introduce:
+  + A novel binary classification metric for conflict escalation
+  + Three methods to extract generalizable conflict signals directly from document embeddings 
+    - Text with country characteristics  
+    - Text with country labels
+    - Text alone
 
-## Conflict forecasting
-
-- Predicting conflict has long been of interest to researchers and practitioners of international relations, and statistical and computational methods to do so can be found in the literature as early as 1944. 
-- Modern methodologies that resemble those we outline here began to appear in the literature in the early 2010s, when researchers began using holdout datasets for model validation. 
-- This shift followed work by Ward et al. that sharply criticized the use of statistical significance tests on in-sample prediction to validate conflict models.
+:::{.notes}
+- Embeddings derived from global news sources using contemporary natural language processing and machine learning methods.
+- Methds use contemporary NLP and ML methods
+:::
 
 ## Challenge of global models
 
-- Today, much of the work in this area has continued to focus on country or region-specific models to predict conflict. 
-- This introduces a “small-data problem” where relatively few observations of conflict are available for a given country. 
-- Some efforts have been made to overcome this by building generalizable models that can theoretically be used to make predictions on any country.
+- Most contemporary work focuses on country or region-specific models. 
+  + This introduces a “small-data problem” 
+- We chose to persue a global model, a relatively new area of reseatch in this domain
+  + This introduces a new problem of accounting for local conditions
 
 :::{.notes}
 - We followed the latter approach in developing our model, hypothesizing that the larger number of observations available to a global model will allow it to extract more generalizable signals of conflict, and that such a model will be better able to predict unforeseen risks in countries with little available training data.
 :::
 
-## Methodology
-
-- Our approach is text-first, making predictions primarily or exclusively from text, with few or no other features added.
-- To the best of our knowledge, no conflict prediction model described in the literature makes use of text embeddings.
-- Previous efforts have included statistical analysis of text, and unsupervised Latent Dirichlet Allocation (LDA) for topic extraction.
-
-
 ## Defining Conflict Escalation
 
-- Our task of modeling conflict escalation required a precise definition of what conflict escalation means. 
-- We began with raw event and casualty counts from the [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/), whose team of researchers monitor thousands of sources in 20 languages to generate a dataset containing monthly totals of conflict events and their related fatalities . 
+- Modeling conflict escalation requires a precise definition of what conflict escalation means. 
+- We treat this as a binary classification task
+- A global model requires a metric that is consistent acoss local conditions. 
+  + The presence or absence of conflict is not sufficient. 
 
-::: {.aside}
-- Prior work has treated this as a binary classification task, asking whether or not conflict escalated in a given month, and we adopt this approach as well.
-- In contrast to prior work, however, we do not treat the simple presence of a fatality due to conflict as sufficient to indicate conflict escalation. 
+::: aside 
+- We used data from from the [Armed Conflict Location & Event Data Project (ACLED)](https://acleddata.com/) for our raw event and fatality counts
 :::
 
 ::: {.notes}
+- prior work also treats this as binary classification
+- prior work uses the presence or absense of fatalities. This may work in local models
+- One study used the presence of fatalities if preceeded by the absense of fatalities
+- ACLED's team of researchers monitor thousands of sources in 20 languages to generate a dataset containing monthly totals of conflict events and their related fatalities. 
 - ACLED defines these events as incidents involving armed groups with political objectives as well as demonstrations, riots, and protests. With these totals in-hand, we needed to create a target to label our training data. 
 - To achieve our objective of creating a generalizable conflict model, we required a metric that was consistent across varying local conditions. 
 - Small changes in the absolute number of monthly fatalities can have widely different implications depending on the country and time period. 
 :::
 
-## Our 'Spike' conflict metric
+## Our "Spike" Conflict Metric
+:::: {.columns}
 
-- We derived a metric to highlight relative “spikes” in political violence.
+::: {.column width="50%"}
+![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png){#fig-spike}
+
+Spike Formula:
+$S = [\beta_m \geq Q_3(\beta)]$
+:::
+
+::: {.column width="50%"}
+- Highlights relative “spikes” in political violence.  
+
+- Sensitive to small increases in political violence in peaceful countries/periods
+- Filters out small fluctuations in long-standing conflicts.
+:::
+
+:::: 
+
+:::{.notes}
+- Formula Explanation:
+  + $\beta_m$ is the slope of the OLS regression for the given month
+  + #Q_3(\beta)]$ is the third quartile of such slopes for the preceeding two years
+
 - Two step calculation
   + First, we calculated the trend in violence for a given month
     - Defined by the slope of OLS regression of the number of ACLED-documented fatalities in target month & preceding 2 months. 
   + Next, we calculated whether that slope was in the 75th percentile of such slopes in the target country for the preceding 2 years.
- 
-:::{.notes}
-This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any time.
-:::
-
-## 'Spike' conflict metric example
-
-![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png){#fig-spike}
-
-
-- Sensitive to small increases in political violence in peaceful countries/periods, while also filtering out small fluctuations in long-standing conflicts.
-
-:::{.notes}
-
 - @fig-spike shows how our metric captures conflict fluctuations in Ukraine. Prior to the Russian invasion of February 2022, small fluctuations trigger a spike. However, much larger fluctuations in the period following the invasion are filtered out, as the spike formula adjusts to the higher level of baseline conflict. 
-
 - The increase in violence during the Ukrainian counter-offensive in the late summer again triggers a spike, and this reflects significant changes in the situation on the ground.
 :::
+
+## Text-First Approach
+
+- In contrast to prior work, our approach is text-first
+  + Conflict signals are extracted primarily or exclusively from text
+- Previous efforts have included statistical analysis of text and topic extraction as supplementary features
+- To the best of our knowledge, no conflict prediction model described in the literature makes use of text embeddings.
 
 ## News Content Data
 
 - The [Global Database of Events Language and Tone (GDELT) Project](https://www.gdeltproject.org/) provides public APIs of current events derived from news articles scraped from sources around the world . 
-- In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset, which precomputes 512-dimension document-level embeddings of their scraped news articles using the Universal Sentence Encoder.
+- In 2021, GDELT introduced its Global Similarity Graph Document Embeddings dataset.
+  + Provides 512-dimension document-level embeddings of scraped news articles using the Universal Sentence Encoder.
 
 :::{.notes}
 - GDELT’s coverage over-represents the western world, particularly the United States and Europe.
@@ -115,6 +131,10 @@ flowchart TD
     GDELT --> Data(Time-partitioned train, val, & test datasets)
     Spike --> Data
 ```
+:::{.notes}
+- Spike is attached to embeddings on a 3-month lag
+:::
+
 Data generation process
 :::
 
@@ -223,11 +243,12 @@ Statistical model architecture
 ## Conflict Prediction Using Text Alone
 
 - Our third approach used a pair of encoder-only transformers
-- the “encoder” and the “classifier”.
-- The encoder was used to distil the embedding corpus by analyzing a subset of article corpus and reducing it's dimensionality.
-- The classifier could then be used to make final predictions on the resulting, distilled dataset.
+- The “encoder” and the “classifier”.
+- The encoder distils the embedding corpus by analyzing a subset of article corpus and reducing it's dimensionality.
+- The classifier makes final predictions on the distilled dataset.
+--- 
 
----
+### The Encoder
 
 :::: {.columns}
 
@@ -236,10 +257,9 @@ Statistical model architecture
 :::
 
 ::: {.column width="50%"}
-Training the Encoder
 
-- Each country/month sample was split into subsamples of 50 articles each
-- The same label was used for each subsample, creating multiple unique training samples per country per month 
+- Trained using a dataset that drew multiple samples per country per month of 50 articles each 
+- The same label was used for each subsample, creating multiple unique training examples for each country and month 
 - This produced a larger, but more distorted corpus
 :::
 
@@ -255,6 +275,8 @@ Training the Encoder
 
 ---
 
+### Training the Classifier
+
 :::: {.columns}
 
 ::: {.column width="50%"}
@@ -262,10 +284,9 @@ Training the Encoder
 :::
 
 ::: {.column width="50%"}
-Training the Classifier
+- Once the Encoder was trained, it's penultimate layer of 16 dense neurons was exposed and the model was frozen
+- Each country/month matrix was then fed into in batches of 50 articles, yeilding a single training example for each country and month of size $16\times\frac{n}{50}$
 
-- Once training was complete, the final layer of the encoder was removed, exposing the penultimate layer of 16 dense neurons. 
-- Each vector was then stacked, resulting in a single training example for each country and month of size $16\times\frac{n}{50}$. 
 :::
 
 :::: 
