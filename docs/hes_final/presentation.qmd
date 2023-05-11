@@ -320,12 +320,13 @@ Statistical model architecture
 ![Model metrics (large values are better)](imgs/fig-best-max-metrics.png){#fig-best-max-metrics}
 
 :::{.notes}
-- The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
-- We evaluated the models against a set of common performance metrics (see @fig-best-min-metrics, @fig-best-max-metrics, @fig-roc). 
+
+- We evaluated the models against a set of common performance metrics
 - Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparable results.
 - Each of the models outperformed the other two in a subset of these metrics. 
 - We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. 
 - Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics.
+- The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
 :::
 
 ---
@@ -346,6 +347,7 @@ Statistical model architecture
 :::
 ::::
 :::{.notes}
+- Area Under the Receiver Operating Characteristic Curve
 - Our target was defined differently from related work which made direct comparison less meaningful.
 - The closest approach used a presence or absence of any armed conflict related fatality as their binary target. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
 :::
@@ -369,7 +371,7 @@ Model Accuracy on Test Set
 
 
 :::{.notes}
-- Further investigation showed that while overall numeric metrics look similar, different models appeared to perform better in different regions of the world—see @fig-ffnn-test-accuracy, @fig-xgboost-test-accuracy, and @fig-transformer-test-accuracy. 
+- We wanted to build a globally generalizable model. Further investigation showed that while overall numeric metrics look similar, different models appeared to perform better in different regions of the world. 
 :::
 
 ---
@@ -378,8 +380,8 @@ Model Accuracy on Test Set
 
 - Practical goal -- a tool that can assist UNICEF
 - Cost & complexity are important
-- Average monthly embeddings dataset & corresponding statistical model fit in memory
-- Article-level embeddings in our other methods require additional data engineering steps to be processed in batches
+- Average monthly embeddings dataset & corresponding statistical model fit in memory and can be trained on CPU
+- Article-level embeddings in our other methods require additional data engineering steps to be processed in batches and need GPU to train
 
 :::{.notes}
 - While performance is often the main objective when developing prediction models, our practical goal was a tool that can assist UNICEF, so cost & complexity is an important consideration.
