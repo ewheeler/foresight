@@ -69,8 +69,6 @@ format:
 ::: {.column width="50%"}
 ![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png){#fig-spike}
 
-Spike Formula:
-$S = [\beta_m \geq Q_3(\beta)]$
 :::
 
 ::: {.column width="50%"}
@@ -83,10 +81,6 @@ $S = [\beta_m \geq Q_3(\beta)]$
 :::: 
 
 :::{.notes}
-- Formula Explanation:
-  + $\beta_m$ is the slope of the OLS regression for the given month
-  + #Q_3(\beta)]$ is the third quartile of such slopes for the preceeding two years
-
 - Two step calculation
   + First, we calculated the trend in violence for a given month
     - Defined by the slope of OLS regression of the number of ACLED-documented fatalities in target month & preceding 2 months. 
@@ -297,28 +291,6 @@ Statistical model architecture
 - In contrast to our earlier approaches, the dual-transformer model was trained purely on news article text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
 :::
 
----
-
-::: {#fig-transformer layout-ncol=1}
-```{mermaid}
-%%| fig-width: 5
-%%| fig-height: 5
-flowchart TD
-    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
-
-    Articles --> Trans1{Encoder\n transformer}
-    Trans1 -->|classifier head present during training| Compact(16 dimension representations)
-
-    Compact --> Trans2{Binary\n classifier\n transformer}
-    Trans2 --> Pred(Prediction of conflict escalation in 3 months)
-
-    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
-    Spike(Conflict response\n binary variable) --> Trans2
-
-    Spike -->|included during model training| Trans1
-```
-Transformer model architecture
-:::
 
 ## Results: metrics
 
@@ -359,13 +331,19 @@ Transformer model architecture
 
 ## Results: generalizability
 
-![FFNN model accuracy on test data](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy height="100px"}
+::: {#fig-elephants layout-ncol=2}
+
+![FFNN](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy}
 
 
-![XGBoost model accuracy on test data](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy height="100px"}
+![XGBoost](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy}
 
 
-![Transformer model accuracy on test data](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy height="100px"}
+![Transformer](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy}
+
+Model Accuracy on Test Set
+:::
+
 
 :::{.notes}
 - Further investigation showed that while overall numeric metrics look similar, different models appeared to perform better in different regions of the world—see @fig-ffnn-test-accuracy, @fig-xgboost-test-accuracy, and @fig-transformer-test-accuracy. 
