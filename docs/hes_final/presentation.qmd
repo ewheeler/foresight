@@ -443,11 +443,9 @@ Transformer model architecture
 - The performance results can serve as a benchmark for future research projects in this field
 
 :::{.notes}
-We explored the possibility of predicting future geopolitical conflict escalation using a global collection of news publications
-:::
----
-
+- We explored the possibility of predicting future geopolitical conflict escalation using a global collection of news publications
 - The neural network-based models appear to generalize better across geographies while the statistical model provided a size/cost of deployment advantage.
 - While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such predictions from primarily text data. 
 - We described several approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science research. 
 - The performance results can serve as a benchmark for future research projects in this field.
+:::
