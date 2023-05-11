@@ -44,11 +44,6 @@ format:
 - To the best of our knowledge, no conflict prediction model described in the literature makes use of text embeddings.
 - Previous efforts have included statistical analysis of text, and unsupervised Latent Dirichlet Allocation (LDA) for topic extraction.
 
-## Three approaches to extracting conflict signals from text embeddings
-
-- The first approach used supervised dimensionality reduction and a feed-forward neural network conditioned with country context characteristics.
-- In the second approach, we used a compact dataset of monthly embedding averages per country per month and applied statistical models such as K-Nearest Neighbors and XGBoost.
-- In the third approach we stacked multiple article-level embeddings and applied transformer-based models to extract a signal exclusively from the text corpus.
 
 ## Defining Conflict Escalation
 
@@ -66,20 +61,24 @@ format:
 - Small changes in the absolute number of monthly fatalities can have widely different implications depending on the country and time period. 
 :::
 
-## Introducing our 'spike' conflict metric
+## The 'Spike' conflict metric
 
-- We derived a metric designed to highlight relative “spikes” in political violence. Calculating whether a spike occurred in a given month is a two-step process. 
-- First, we calculated the trend in violence for a given month, defined by the slope of OLS regression of the number of ACLED-documented fatalities in target month & preceding 2 months.
-- Next, we calculated whether that slope was in the 75th percentile of such slopes in the target country for the preceding 2 years.
-
+- We derived a metric to highlight relative “spikes” in political violence.
+- Two step calculation
+  + First, we calculated the trend in violence for a given month
+    - Defined by the slope of OLS regression of the number of ACLED-documented fatalities in target month & preceding 2 months. 
+  + Next, we calculated whether that slope was in the 75th percentile of such slopes in the target country for the preceding 2 years.
+ 
 :::{.notes}
 This trend allowed us to estimate whether violence was increasing or decreasing in the target country at any time.
 :::
----
+
+### Spike Metric Cont...
 
 ![The Spike metric applied to Ukraine](imgs/Ukraine_Spikes.png){#fig-spike}
 
-- Our 'spike' binary metric is sensitive to small increases in political violence in peaceful countries/periods, while also filtering out small fluctuations in long-standing conflicts.
+
+- Sensitive to small increases in political violence in peaceful countries/periods, while also filtering out small fluctuations in long-standing conflicts.
 
 :::{.notes}
 
@@ -351,8 +350,8 @@ Transformer model architecture
 - AI predictions of impending conflict may lead policy makers to take actions that make conflict more likely. 
 :::
 
----
 
+## Mitigating Risk
 - Models, not oracles 
 - Not a substitute for careful deliberation and dialogue
 - At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong
