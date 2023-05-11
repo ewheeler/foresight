@@ -200,11 +200,9 @@ Feed forward neural network model architecture
 
 ## Conflict Prediction Using Text and Country Labels
 
-- In this approach we prepared the dataset by averaging news article embeddings per country, per month. We also included one-hot encoded columns for countries, but no other country features were added. 
-- Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from the “curse of dimensionality”. 
+:::: {.columns}
 
----
-
+::: {.column width="50%"}
 ::: {#fig-xgboost layout-ncol=1}
 ```{mermaid}
 %%| fig-width: 5
@@ -227,8 +225,21 @@ flowchart TD
 ```
 Statistical model architecture
 :::
+:::
+
+::: {.column width="50%"}
+- Average article embeddings per country per month
+- One-hot encoded country labels
+- Reduce dimensionality with PCA
+- Train two models: K Nearest Neighbors and XGBoost
+- Average their predictions
+:::
+
+::::
 
 :::{.notes}
+- In this approach we prepared the dataset by averaging news article embeddings per country, per month. We also included one-hot encoded columns for countries, but no other country features were added. 
+- Given the high dimensionality of the data (512-dimensional embedding vectors + 700 dummy variables for countries), this dataset suffered from the “curse of dimensionality”. 
 - This was handled by performing Principal Component Analysis; we found that reducing the number of dimensions to represent 80% of variance (~169 components with our selected train-test cutoff) improved the overall performance.
 - Another issue was a class imbalance: conflict spike was present in only 14% of the training samples. We used random over-sampling technique to upsample the positive examples.
 - The model used in this approach is a stacked model that averages probabilities independently predicted by a K-Nearest Neighbors model and an XGBoost model. We used standard open-source versions of the underlying models. The intention behind averaging the predicted probabilities was to reduce the impact of individual model weaknesses. 
@@ -290,33 +301,59 @@ Statistical model architecture
 - In contrast to our earlier approaches, the dual-transformer model was trained purely on news article text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
 :::
 
-## Results
-
-- We evaluated the models against a set of common performance metrics (see @fig-best-min-metrics, @fig-best-max-metrics, @fig-roc). 
-- Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparable results.
-- Each of the models outperformed the other two in a subset of these metrics. 
-
 ---
 
-- We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. 
-- Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics. 
+::: {#fig-transformer layout-ncol=1}
+```{mermaid}
+%%| fig-width: 5
+%%| fig-height: 5
+flowchart TD
+    GDELT[GDELT Embeddings] -->|sample by country by month| Articles(Monthly news article samples)
 
----
+    Articles --> Trans1{Encoder\n transformer}
+    Trans1 -->|classifier head present during training| Compact(16 dimension representations)
+
+    Compact --> Trans2{Binary\n classifier\n transformer}
+    Trans2 --> Pred(Prediction of conflict escalation in 3 months)
+
+    ACLED[Monthly ACLED fatality counts] -->|compute our 'spike' variable| Spike
+    Spike(Conflict response\n binary variable) --> Trans2
+
+    Spike -->|included during model training| Trans1
+```
+Transformer model architecture
+:::
+
+## Results: metrics
 
 ![Model metrics (large values are better)](imgs/fig-best-max-metrics.png){#fig-best-max-metrics}
 
 :::{.notes}
 - The relative ranks of the models are the opposite for these two metrics with each of the two models with additional country data ranking best on one and worst on the other and the text-only model always being in the middle.
+- We evaluated the models against a set of common performance metrics (see @fig-best-min-metrics, @fig-best-max-metrics, @fig-roc). 
+- Despite conceptual differences in dataset creation and modeling techniques, all three of the described above approaches produced comparable results.
+- Each of the models outperformed the other two in a subset of these metrics. 
+- We assume that UNICEF decision makers would appreciate a tool that flags all potential rising conflicts even if sometimes it has false positives. At the same time, if the false positive rate is too high the signal would become too noisy for the tool to be useful. 
+- Given these assumptions and the class imbalance of the original dataset, Recall (ratio of correctly identified conflict spikes to the total number of true spikes) and Cohen Kappa Score (overall agreement between predictions and true labels adjusted for class imbalance) seem to be most relevant metrics.
 :::
 
 ---
 
-![Model metrics (smaller values are better)](imgs/fig-best-min-metrics.png){#fig-best-min-metrics}
+## Results: comparison to prior work
 
----
+:::: {.columns}
 
+::: {.column width="50%"}
 ![Receiver Operator Characteristics](imgs/fig-roc.png){#fig-roc}
+:::
 
+::: {.column width="50%"}
+
+- Our best ROC_AUC is 0.69
+- Comparing to 0.83 overall and 0.75 for hard cases in paper by Mueller and Rauh 2022 (another binary classification problem)
+- Comparison is not very meaningful because our target is different
+:::
+::::
 :::{.notes}
 - Our target was defined differently from related work which made direct comparison less meaningful.
 - The closest approach used a presence or absence of any armed conflict related fatality as their binary target. They focused on ROC_AUC as their metric and were able to achieve 0.83 on overall dataset and 0.75 on hard cases (sudden conflict in peaceful countries) with their text based (LDA topic extraction) model. Our best ROC_AUC score is 69% (achieved by text + country labels XGBoost/KNN model).
@@ -324,13 +361,15 @@ Statistical model architecture
 
 ---
 
-![FFNN model accuracy on test data](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy}
+## Results: generalizability
+
+![FFNN model accuracy on test data](imgs/fig-ffnn-test-accuracy.png){#fig-ffnn-test-accuracy height="100px"}
 
 
-![XGBoost model accuracy on test data](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy}
+![XGBoost model accuracy on test data](imgs/fig-xgboost-test-accuracy.png){#fig-xgboost-test-accuracy height="100px"}
 
 
-![Transformer model accuracy on test data](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy}
+![Transformer model accuracy on test data](imgs/fig-transformer-test-accuracy.png){#fig-transformer-test-accuracy height="100px"}
 
 :::{.notes}
 - Further investigation showed that while overall numeric metrics look similar, different models appeared to perform better in different regions of the world—see @fig-ffnn-test-accuracy, @fig-xgboost-test-accuracy, and @fig-transformer-test-accuracy. 
@@ -338,9 +377,26 @@ Statistical model architecture
 
 ---
 
+## Results: practicality
+
+- Practical goal -- a tool that can assist UNICEF
+- Cost & complexity are important
+- Average monthly embeddings dataset & corresponding statistical model fit in memory
+- Article-level embeddings in our other methods require additional data engineering steps to be processed in batches
+
+:::{.notes}
 - While performance is often the main objective when developing prediction models, our practical goal was a tool that can assist UNICEF, so cost & complexity is an important consideration.
 - Average monthly embeddings dataset & corresponding statistical model fit in memory, whereas article-level embeddings in our other methods require additional data engineering steps to be processed in batches.
-- All three approaches produced promising results so the model choice depends on the user's goals, priority performance metrics, and available resources.
+:::
+
+## So which model is best?
+
+- All three approaches produced promising results
+- The model choice depends on:
+  - user's goals
+  - priority performance metrics
+  - available resources
+
 
 ## Ethical Considerations
 - Bias in the training data
@@ -365,27 +421,36 @@ Statistical model architecture
 
 ## Future work
 
-- We foresee several ways to extend this work, and there are exciting opportunities for both further research and operationalizations.
+- Increase size of training set (we only used 20%)
+- Continue experimentation with data sampling and aggregation approaches and model tuning
+- Research regional disparities in model performance
+- Build an application with user interface
+- Build a more robust and automated data pipeline
 
-## Future research directions
-
+:::{.notes}
 - Our work used only 20% of the daily embeddings available through GDELT: increasing size of training sets could yield better results. 
 - Continued experimentation with data sampling and aggregation approaches, as well as model tuning, could produce models that outperform those outlined here without additional training data. 
 - Finally, we believe deeper research into regional disparities in model performance is needed. Understanding the limitations of global media coverage for conflict prediction will be critical to any effort to operationalize this work.
+:::
 
 ## Conclusions
 
-- In this work we explored the possibility of predicting future geopolitical conflict escalation at a country level using a global collection of news publications. We compared the usage of text-only data and data enriched with country labels and social indicators. 
-- We introduce a conflict escalation definition and a novel binary classification metric.
+- Text-only data vs data enriched with country labels and social indicators
+- Conflict escalation definition
+- Text embeddings provide a strong enough signal for predictions
+- Comparable results across different data sampling and modeling approaches
+- Neural network-based models -- better generalization across geographies
+- Statistical model -- smaller size/cost of deployment
 
----
+## So what?
 
-- The results suggest that text embeddings provide a strong enough signal to make such predictions. 
-- Different data sampling and modeling approaches produced comparable results and each of the proposed models performed best at some of the common numeric metrics. 
+- We hope this work will contribute to both UNICEF operations and political science research
+- The performance results can serve as a benchmark for future research projects in this field
 
----
-
+:::{.notes}
+- We explored the possibility of predicting future geopolitical conflict escalation using a global collection of news publications
 - The neural network-based models appear to generalize better across geographies while the statistical model provided a size/cost of deployment advantage.
 - While this work did not produce a single best model for conflict escalation predictions, it demonstrated the possibility of such predictions from primarily text data. 
 - We described several approaches for data aggregation and modeling. We hope this work will contribute to both UNICEF operations and political science research. 
 - The performance results can serve as a benchmark for future research projects in this field.
+:::
