@@ -293,6 +293,27 @@ Statistical model architecture
 - In contrast to our earlier approaches, the dual-transformer model was trained purely on news article text embeddings. The model was not conditioned by country, and no additional features were added beyond the text corpus itself.
 :::
 
+## Ethical Considerations
+- Bias in the training data
+- Adversarial attacks
+- Self-fulfilling prophesies
+
+:::{.notes}
+- All models showed varying performance by region, could lead to resources being misallocated. 
+- Large volumes of fake news could overwhelm true signal, obscure intentions of malicious actors & cause panic.
+- AI predictions of impending conflict may lead policy makers to take actions that make conflict more likely. 
+:::
+
+
+## Mitigating Risk
+- Models, not oracles 
+- Not a substitute for careful deliberation and dialogue
+- At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong
+
+:::{.notes}
+- Measuring the temperature of the global media conversation, not gazing into the future.
+:::
+
 
 ## Results: metrics
 
@@ -373,27 +394,6 @@ Model Accuracy on Test Set
   - priority performance metrics
   - available resources
 
-
-## Ethical Considerations
-- Bias in the training data
-- Adversarial attacks
-- Self-fulfilling prophesies
-
-:::{.notes}
-- All models showed varying performance by region, could lead to resources being misallocated. 
-- Large volumes of fake news could overwhelm true signal, obscure intentions of malicious actors & cause panic.
-- AI predictions of impending conflict may lead policy makers to take actions that make conflict more likely. 
-:::
-
-
-## Mitigating Risk
-- Models, not oracles 
-- Not a substitute for careful deliberation and dialogue
-- At their best, these models can provide an early warning for conflict, and if the right actions are taken, then they can be made to be wrong
-
-:::{.notes}
-- Measuring the temperature of the global media conversation, not gazing into the future.
-:::
 
 ## Future work
 
